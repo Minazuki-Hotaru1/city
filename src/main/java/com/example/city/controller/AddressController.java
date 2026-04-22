@@ -25,8 +25,6 @@ public class AddressController {
     public Map getAddressLatAndLong(@RequestParam String address){
         return getLatAndLong.getLatAndLong(address);
 
-
-        /// ////////////////////////
     }
 
 }
