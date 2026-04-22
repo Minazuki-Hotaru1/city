@@ -6,5 +6,7 @@ import java.util.Map;
 
 public interface UserService {
 
-    Map<String, Object> userRegister(@RequestBody Map<String, Object> data);
+    Map<String, Object> userRegister(Map<String, Object> data);
+
+    Map<String, Object> login(String username, String password);
 }

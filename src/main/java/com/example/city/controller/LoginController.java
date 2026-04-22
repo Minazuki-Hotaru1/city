@@ -4,6 +4,7 @@ package com.example.city.controller;
 import com.example.city.service.AdminService;
 import com.example.city.service.EnterpriseService;
 import com.example.city.Utils.JwtUtil;
+import com.example.city.service.UserService;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,6 +19,8 @@ public class LoginController {
     private EnterpriseService enterpriseService;
     @Resource
     private AdminService adminService;
+    @Resource
+    private UserService userService;
 
     @Resource
     private JwtUtil jwtUtil;
@@ -31,9 +34,8 @@ public class LoginController {
             //管理员用户user1
             case "user1" -> adminService.login(username, password);
             case "user2" -> enterpriseService.login(username, password);
+            case "user3" -> userService.login(username, password);
             default -> null;
         };
-
-
     }
 }

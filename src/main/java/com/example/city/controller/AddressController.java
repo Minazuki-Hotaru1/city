@@ -16,11 +16,13 @@ import java.util.Map;
 @CrossOrigin
 public class AddressController {
 
+    @Resource
+    private GetLatAndLong getLatAndLong;
+
 
     //企业用户注册时获取接口所给的经纬度
     @GetMapping("/getAddressLatAndLong")
     public Map getAddressLatAndLong(@RequestParam String address){
-        GetLatAndLong getLatAndLong = new GetLatAndLong();
         return getLatAndLong.getLatAndLong(address);
     }
 

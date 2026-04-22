@@ -42,7 +42,7 @@ public class EnterpriseImpl implements EnterpriseService {
 
         String token = jwtUtil.generateToken(
                 enterprise.getUsername(),
-                Collections.singletonMap("enterpriseId", enterprise.getId())
+                Collections.singletonMap("enterpriseID", enterprise.getId())
         );
 
         result.put("success", true);

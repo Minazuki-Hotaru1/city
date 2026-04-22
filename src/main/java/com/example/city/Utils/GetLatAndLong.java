@@ -3,6 +3,7 @@ package com.example.city.Utils;
 import jakarta.annotation.Priority;
 import jakarta.annotation.Resource;
 import org.springframework.context.annotation.Bean;
+import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.client.RestTemplate;
 
@@ -10,6 +11,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
+@Component
 public class GetLatAndLong {
 
     @Resource

@@ -18,8 +18,9 @@ public class UserController {
     private UserService userService;
 
     //普通用户注册账号
-    @PostMapping
+    @PostMapping("/userRegister")
     public Map<String, Object> login(@RequestBody Map<String, Object> data) {
-        return null;
+        return userService.userRegister(data);
     }
+
 }

@@ -56,7 +56,7 @@ public class AdminServiceImpl implements AdminService {
 
         String token = jwtUtil.generateToken(
                 admin.getUsername(),
-                Collections.singletonMap("adminId", admin.getId())
+                Collections.singletonMap("adminID", admin.getId())
         );
 
         //登录日期记录，方便查看

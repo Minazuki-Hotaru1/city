@@ -38,6 +38,8 @@ class CityApplicationTests {
     private TypeMapper typeMapper;
     @Resource
     private AddressMapper addressMapper;
+    @Resource
+    private GetLatAndLong getLatAndLong;
     @Test
     void contextLoads() {
     }
@@ -161,7 +163,6 @@ class CityApplicationTests {
 
     @Test
     void test4() {
-        GetLatAndLong getLatAndLong = new GetLatAndLong();
         Map map = getLatAndLong.getLatAndLong("云南省第一人民医院");
         System.out.println(map);
     }
