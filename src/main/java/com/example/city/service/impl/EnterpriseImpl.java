@@ -49,7 +49,7 @@ public class EnterpriseImpl implements EnterpriseService {
         result.put("message", "登录成功");
         result.put("token", token);
         result.put("username", enterprise.getUsername());
-        result.put("enterpriseId", enterprise.getId());
+        result.put("ID", enterprise.getId());
         return result;
 
     }

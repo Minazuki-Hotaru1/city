@@ -69,7 +69,7 @@ public class AdminServiceImpl implements AdminService {
         result.put("message", "登录成功");
         result.put("token", token);
         result.put("username", admin.getUsername());
-        result.put("adminId", admin.getId());
+        result.put("ID", admin.getId());
         result.put("loginTime", timeStr);
         return result;
     }

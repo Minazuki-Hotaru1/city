@@ -92,7 +92,7 @@ public class UserServiceImpl implements UserService{
         result.put("message", "登录成功");
         result.put("token", token);
         result.put("username", user.getUsername());
-        result.put("userID", user.getId());
+        result.put("ID", user.getId());
         return result;
     }
 }
