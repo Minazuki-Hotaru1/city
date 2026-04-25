@@ -48,13 +48,14 @@ class CityApplicationTests {
     @Resource
     private GetLatAndLong getLatAndLong;
     @Resource
-    private  RestTemplate restTemplate;
+    private RestTemplate restTemplate;
     @Resource
-    private PasswordUtil  passwordUtil;
+    private PasswordUtil passwordUtil;
     @Resource
     private UserMapper userMapper;
     @Resource
-    private AddressUtil  addressUtil;
+    private AddressUtil addressUtil;
+
     @Test
     void contextLoads() {
     }
@@ -161,7 +162,7 @@ class CityApplicationTests {
         List<Enterprise> enterprises = result.getRecords();
         List<EnterpriseVO> voList = new ArrayList<>();
 
-        for(Enterprise enterprise : enterprises){
+        for (Enterprise enterprise : enterprises) {
             EnterpriseVO vo = new EnterpriseVO();
             BeanUtils.copyProperties(enterprise, vo);
             Type type = typeMapper.selectOne(
@@ -217,7 +218,7 @@ class CityApplicationTests {
                             int num = random.nextInt(500);
                             String streetName = (String) street.get("name");
 
-                            list.add("云南省昆明市五华区"+streetName+num+"号");
+                            list.add("云南省昆明市五华区" + streetName + num + "号");
                         }
                     }
                 }
@@ -236,13 +237,12 @@ class CityApplicationTests {
         listqu.add("呈贡区");
 
 
-
         for (int i = 0; i < 1000; i++) {
             //随机生成账号
             User user = new User();
             Faker faker = new Faker();
             String username = faker.name().username();
-            String password =  passwordUtil.generatePassword(10);
+            String password = passwordUtil.generatePassword(10);
             //生成随机的号数
             Random random = new Random();
             int num1 = random.nextInt(500);
@@ -264,13 +264,7 @@ class CityApplicationTests {
                 e.printStackTrace();
             }
             userMapper.insert(user);
-
         }
-
-
-
-
-
 
     }
 }

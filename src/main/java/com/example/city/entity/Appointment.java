@@ -18,5 +18,6 @@ public class Appointment {
     private String enterpriseID;
     private String time;
     @TableField("app_status")
+    //1：已预约但未到现场 2： 已预约并到现场 3：预约未到现场
     private String appStatus;
 }

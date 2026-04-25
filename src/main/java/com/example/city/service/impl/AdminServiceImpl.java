@@ -31,6 +31,8 @@ public class AdminServiceImpl implements AdminService {
     private EnterpriseConfirmMapper enterpriseConfirmMapper;
     @Resource
     private AddressMapper addressMapper;
+    @Resource
+    private UserMapper userMapper;
 
     @Resource
     private ConfirmAsyncService confirmAsyncService;
@@ -229,5 +231,20 @@ public class AdminServiceImpl implements AdminService {
         voPage.setRecords(voList);
 
         return voPage;
+    }
+
+    //管理员用户查看普通用户的地图分布的数据
+    @Override
+    public List<Map<String, Object>> getAllUser() {
+        List<Map<String, Object>> userList;
+        userList = userMapper.selectMaps(null);
+        return userList;
+    }
+
+    @Override
+    public Page<User> getAllUserPage(long page, long number) {
+        Page<User> page1 = new Page<>(page, number);
+        Page<User> result = userMapper.selectPage(page1, null);
+        return result;
     }
 }

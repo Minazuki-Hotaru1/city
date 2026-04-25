@@ -84,4 +84,14 @@ public class AdminController {
     public Page<EnterpriseVO> getAllEnterprise(@RequestParam long page, long number) {
         return adminService.getEnterprise(page, number);
     }
+
+    @GetMapping("/getAllUser")
+    public List<Map<String, Object>> getAllUser() {
+        return adminService.getAllUser();
+    }
+
+    @GetMapping("/getAllUserPage")
+    Page<User> getAllUserPage(@RequestParam long page, long number) {
+        return adminService.getAllUserPage(page, number);
+    }
 }
