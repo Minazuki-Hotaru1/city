@@ -9,5 +9,8 @@ public class UserVO {
     private String address;
     private String latitude;
     private String longitude;
-    private String appStatus;
+    private String appID;
+    private String appSecret;
+    private String startTime;
+    private String endTime;
 }

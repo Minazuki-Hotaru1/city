@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.city.VO.AddressVO;
 import com.example.city.VO.ConfirmVO;
 import com.example.city.VO.EnterpriseVO;
+import com.example.city.VO.UserVO;
 import com.example.city.entity.User;
 
 import java.util.List;
@@ -24,7 +25,7 @@ public interface AdminService {
 
     List<Map<String, Object>> getAllUser();
 
-    Page<User> getAllUserPage(long page, long number);
+    Page<UserVO> getAllUserPage(long page, long number);
 
 
 }

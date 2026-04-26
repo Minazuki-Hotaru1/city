@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.city.VO.AddressVO;
 import com.example.city.VO.ConfirmVO;
 import com.example.city.VO.EnterpriseVO;
+import com.example.city.VO.UserVO;
 import com.example.city.entity.*;
 import com.example.city.mapper.*;
 import com.example.city.service.AdminService;
@@ -33,6 +34,8 @@ public class AdminServiceImpl implements AdminService {
     private AddressMapper addressMapper;
     @Resource
     private UserMapper userMapper;
+    @Resource
+    private AppointmentMapper appointmentMapper;
 
     @Resource
     private ConfirmAsyncService confirmAsyncService;
@@ -241,10 +244,35 @@ public class AdminServiceImpl implements AdminService {
         return userList;
     }
 
+
+    //返回用户的信息以及预约的id、状态、预约时间
     @Override
-    public Page<User> getAllUserPage(long page, long number) {
+    public Page<UserVO> getAllUserPage(long page, long number) {
         Page<User> page1 = new Page<>(page, number);
         Page<User> result = userMapper.selectPage(page1, null);
-        return result;
+        List<User> users = result.getRecords();
+
+        List<UserVO> voList = new ArrayList<>();
+        for(User user : users){
+            UserVO vo = new UserVO();
+            BeanUtils.copyProperties(user, vo);
+
+            Appointment appointment = appointmentMapper.selectOne(
+                    new QueryWrapper<Appointment>().eq("user_id", user.getId())
+            );
+
+            vo.setAppID(appointment.getId());
+            vo.setAppSecret(appointment.getAppStatus());
+
+            vo.setStartTime(appointment.getStartTime());
+            vo.setEndTime(appointment.getEndTime());
+            voList.add(vo);
+        }
+
+        Page<UserVO> voPage = new Page<>();
+        BeanUtils.copyProperties(result, voPage);
+        voPage.setRecords(voList);
+
+        return voPage;
     }
 }

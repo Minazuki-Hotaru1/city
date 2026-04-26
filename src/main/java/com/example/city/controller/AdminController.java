@@ -91,7 +91,7 @@ public class AdminController {
     }
 
     @GetMapping("/getAllUserPage")
-    Page<User> getAllUserPage(@RequestParam long page, long number) {
+    Page<UserVO> getAllUserPage(@RequestParam long page, long number) {
         return adminService.getAllUserPage(page, number);
     }
 }
