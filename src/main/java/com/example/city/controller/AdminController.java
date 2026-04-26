@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.city.VO.AddressVO;
 import com.example.city.VO.ConfirmVO;
 import com.example.city.VO.EnterpriseVO;
+import com.example.city.VO.UserVO;
 import com.example.city.entity.*;
 import com.example.city.mapper.EnterpriseConfirmMapper;
 import com.example.city.mapper.EnterpriseMapper;

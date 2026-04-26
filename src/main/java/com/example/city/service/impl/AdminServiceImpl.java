@@ -251,21 +251,21 @@ public class AdminServiceImpl implements AdminService {
         Page<User> page1 = new Page<>(page, number);
         Page<User> result = userMapper.selectPage(page1, null);
         List<User> users = result.getRecords();
+        System.out.println(users.size());
 
         List<UserVO> voList = new ArrayList<>();
         for(User user : users){
             UserVO vo = new UserVO();
             BeanUtils.copyProperties(user, vo);
-
             Appointment appointment = appointmentMapper.selectOne(
-                    new QueryWrapper<Appointment>().eq("user_id", user.getId())
-            );
+                    new QueryWrapper<Appointment>().eq("user_id", user.getId()));
+            if (appointment != null) {
+                vo.setAppID(appointment.getId() != null ? appointment.getId() : "0");
+                vo.setAppSecret(appointment.getAppStatus() != null ? appointment.getAppStatus() : "0");
 
-            vo.setAppID(appointment.getId());
-            vo.setAppSecret(appointment.getAppStatus());
-
-            vo.setStartTime(appointment.getStartTime());
-            vo.setEndTime(appointment.getEndTime());
+                vo.setStartTime(appointment.getStartTime() != null ? appointment.getAppStatus() : "0");
+                vo.setEndTime(appointment.getEndTime() != null ? appointment.getAppStatus() : "0");
+            }
             voList.add(vo);
         }
 
