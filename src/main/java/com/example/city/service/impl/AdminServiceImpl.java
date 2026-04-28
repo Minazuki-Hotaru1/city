@@ -14,6 +14,7 @@ import com.example.city.Utils.JwtUtil;
 import jakarta.annotation.Resource;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -36,6 +37,8 @@ public class AdminServiceImpl implements AdminService {
     private UserMapper userMapper;
     @Resource
     private AppointmentMapper appointmentMapper;
+    @Resource
+    private EnterpriseStatusMapper enterpriseStatusMapper;
 
     @Resource
     private ConfirmAsyncService confirmAsyncService;
@@ -274,5 +277,33 @@ public class AdminServiceImpl implements AdminService {
         voPage.setRecords(voList);
 
         return voPage;
+    }
+
+    //返回企业用户的预约、在线人数状态
+    @Override
+    public Map<String, Object> getEnStatus (@RequestParam String id) {
+        Map<String,Object> result = new HashMap<>();
+        EnterpriseStatus enterpriseStatus = enterpriseStatusMapper.selectOne(
+                new QueryWrapper<EnterpriseStatus>().eq("enterprise_id", id));
+        try{
+            if(enterpriseStatus == null){
+                result.put("success", false);
+                result.put("message", "未查询到信息");
+                return result;
+            }
+
+            result.put("success", true);
+            result.put("reservedCount",  enterpriseStatus.getReservedCount());
+            result.put("reservationCapacity", enterpriseStatus.getReservationCapacity());
+            result.put("onlineCount", enterpriseStatus.getOnlineCount());
+            result.put("onlineCapacity", enterpriseStatus.getOnlineCapacity());
+            return  result;
+
+        } catch (Exception e){
+            result.put("success", false);
+            result.put("message", e.getMessage());
+        }
+        return null;
+
     }
 }

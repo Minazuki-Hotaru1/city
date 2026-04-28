@@ -5,6 +5,7 @@ import com.example.city.VO.AddressVO;
 import com.example.city.VO.ConfirmVO;
 import com.example.city.VO.EnterpriseVO;
 import com.example.city.VO.UserVO;
+import com.example.city.entity.EnterpriseStatus;
 import com.example.city.entity.User;
 
 import java.util.List;
@@ -26,6 +27,8 @@ public interface AdminService {
     List<Map<String, Object>> getAllUser();
 
     Page<UserVO> getAllUserPage(long page, long number);
+
+    Map<String, Object> getEnStatus(String id);
 
 
 }

@@ -86,6 +86,12 @@ public class AdminController {
         return adminService.getEnterprise(page, number);
     }
 
+    //管理员用户获取企业的状态
+    @GetMapping("/getEnStatus")
+    public Map<String, Object> getEnStatus(@RequestParam String id) {
+        return adminService.getEnStatus(id);
+    }
+
     @GetMapping("/getAllUser")
     public List<Map<String, Object>> getAllUser() {
         return adminService.getAllUser();
