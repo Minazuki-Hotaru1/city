@@ -18,7 +18,7 @@ public class GetLatAndLong {
     private RestTemplate restTemplate;
 
     //调用获取经纬度的接口
-    public Map getLatAndLong(String address){
+    public Map<String, Object> getLatAndLong(String address){
         String encodeAddress = URLEncoder.encode(address, StandardCharsets.UTF_8);
         String url = "https://cn.apihz.cn/api/other/jwjuhe.php?id=10015738"
                 + "&key=b34a527f8ba8f034f2490a7b6b365056"

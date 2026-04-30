@@ -17,5 +17,6 @@ public class Address {
     private String enterpriseID;
     private String latitude;
     private String longitude;
-
+    @TableField("address_name")
+    private String addressName;
 }
