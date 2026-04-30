@@ -179,7 +179,7 @@ class CityApplicationTests {
 
     @Test
     void test4() {
-        Map map = getLatAndLong.getLatAndLong("云南省昆明市五华区大观街道31号");
+        Map<String, Object> map = getLatAndLong.getLatAndLong("星星充电汽车充电站(永云新能源学府路充电站)");
         System.out.println(map);
     }
 

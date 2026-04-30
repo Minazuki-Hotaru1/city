@@ -2,6 +2,7 @@ package com.example.city.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.example.city.Utils.GetLatAndLong;
 import com.example.city.VO.AddressVO;
 import com.example.city.VO.ConfirmVO;
 import com.example.city.VO.EnterpriseVO;
@@ -11,6 +12,7 @@ import com.example.city.mapper.*;
 import com.example.city.service.AdminService;
 import com.example.city.Async.ConfirmAsyncService;
 import com.example.city.Utils.JwtUtil;
+import com.example.city.service.UserService;
 import jakarta.annotation.Resource;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -44,6 +46,8 @@ public class AdminServiceImpl implements AdminService {
     private ConfirmAsyncService confirmAsyncService;
     @Resource
     private JwtUtil jwtUtil;
+    @Resource
+    private GetLatAndLong getLatAndLong;
 
 
     @Override
@@ -148,9 +152,23 @@ public class AdminServiceImpl implements AdminService {
         en.setPassword(confirm.getPassword());
         en.setTypeID(confirm.getTypeID());
         en.setRoles(confirm.getRoles());
+
+        //存到地址表中
+        Address address = new Address();
         try {
             en.setId(null);
             enterpriseMapper.insert(en);
+            //查询新添加的用户的id是多少
+            Enterprise en1 = enterpriseMapper.selectOne(
+                    new QueryWrapper<Enterprise>().eq("username", en.getUsername())
+            );
+            //添加到address表中
+            address.setEnterpriseID(en1.getId());
+            //通过地址获取lan和long
+            Map<String, Object> addressMap = getLatAndLong.getLatAndLong(confirm.getAddress());
+            address.setLatitude((String) addressMap.get("lat"));
+            address.setLongitude((String) addressMap.get("lng"));
+            addressMapper.insert(address);
             result.put("success", true);
             return result;
         } catch (Exception e) {
@@ -158,6 +176,7 @@ public class AdminServiceImpl implements AdminService {
             result.put("message", e.getMessage());
             return result;
         }
+
     }
 
     //企业审核不通过
@@ -297,7 +316,7 @@ public class AdminServiceImpl implements AdminService {
             result.put("reservationCapacity", enterpriseStatus.getReservationCapacity());
             result.put("onlineCount", enterpriseStatus.getOnlineCount());
             result.put("onlineCapacity", enterpriseStatus.getOnlineCapacity());
-            return  result;
+            return result;
 
         } catch (Exception e){
             result.put("success", false);
