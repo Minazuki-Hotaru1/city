@@ -168,6 +168,7 @@ public class AdminServiceImpl implements AdminService {
             Map<String, Object> addressMap = getLatAndLong.getLatAndLong(confirm.getAddress());
             address.setLatitude((String) addressMap.get("lat"));
             address.setLongitude((String) addressMap.get("lng"));
+            address.setAddressName(confirm.getAddress());
             addressMapper.insert(address);
             result.put("success", true);
             return result;
