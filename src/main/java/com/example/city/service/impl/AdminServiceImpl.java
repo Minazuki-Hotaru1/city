@@ -228,6 +228,19 @@ public class AdminServiceImpl implements AdminService {
             vo.setEnterpriseName(enterprise != null ? enterprise.getRoles() : "未知企业");
             vo.setTypeName(type.getTypeName());
 
+
+            //查询对应企业的状态并存储
+            EnterpriseStatus enterpriseStatus = enterpriseStatusMapper.selectOne(
+                    new QueryWrapper<EnterpriseStatus>().eq("enterprise_id", address.getEnterpriseID())
+            );
+            if(enterpriseStatus != null){
+                vo.setReservedCount(enterpriseStatus.getReservedCount());
+                vo.setReservationCapacity(enterpriseStatus.getReservationCapacity());
+                vo.setOnlineCount(enterpriseStatus.getOnlineCount());
+                vo.setOnlineCapacity(enterpriseStatus.getOnlineCapacity());
+            }
+
+
             voList.add(vo);
         }
         return voList;

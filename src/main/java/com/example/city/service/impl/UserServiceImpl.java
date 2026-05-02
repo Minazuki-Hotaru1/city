@@ -4,18 +4,17 @@ package com.example.city.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.example.city.Utils.GetLatAndLong;
 import com.example.city.Utils.JwtUtil;
-import com.example.city.entity.Admin;
-import com.example.city.mapper.UserMapper;
+import com.example.city.VO.AddressVO;
+import com.example.city.entity.*;
+import com.example.city.mapper.*;
 import com.example.city.service.UserService;
 import jakarta.annotation.Resource;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
-import com.example.city.entity.User;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class UserServiceImpl implements UserService{
@@ -25,6 +24,14 @@ public class UserServiceImpl implements UserService{
     private UserMapper userMapper;
     @Resource
     private GetLatAndLong getLatAndLong;
+    @Resource
+    private AddressMapper addressMapper;
+    @Resource
+    private EnterpriseMapper enterpriseMapper;
+    @Resource
+    private TypeMapper typeMapper;
+    @Resource
+    private EnterpriseStatusMapper enterpriseStatusMapper;
     @Resource
     private JwtUtil jwtUtil;
 
@@ -94,5 +101,45 @@ public class UserServiceImpl implements UserService{
         result.put("username", user.getUsername());
         result.put("ID", user.getId());
         return result;
+    }
+
+    //查询所有企业以及状态，在地图上显示
+    @Override
+    public List<AddressVO> getAllEn() {
+        List<Address> addressList = addressMapper.selectList(null);
+        List<AddressVO> voList = new ArrayList<>();
+        for (Address address : addressList) {
+            AddressVO vo = new AddressVO();
+            BeanUtils.copyProperties(address, vo);
+            //查询对应企业的名字
+            Enterprise enterprise = enterpriseMapper.selectOne(
+                    new QueryWrapper<Enterprise>().eq("id", address.getEnterpriseID())
+            );
+
+            //查询对应企业的类型
+            Type type = typeMapper.selectOne(
+                    new QueryWrapper<Type>().eq("type_id", enterprise.getTypeID())
+            );
+
+            vo.setEnterpriseName(enterprise != null ? enterprise.getRoles() : "未知企业");
+            vo.setTypeName(type.getTypeName());
+
+
+            //查询对应企业的状态并存储
+            EnterpriseStatus enterpriseStatus = enterpriseStatusMapper.selectOne(
+                    new QueryWrapper<EnterpriseStatus>().eq("enterprise_id", address.getEnterpriseID())
+            );
+            if(enterpriseStatus != null){
+                vo.setReservedCount(enterpriseStatus.getReservedCount());
+                vo.setReservationCapacity(enterpriseStatus.getReservationCapacity());
+                vo.setOnlineCount(enterpriseStatus.getOnlineCount());
+                vo.setOnlineCapacity(enterpriseStatus.getOnlineCapacity());
+            }
+
+
+            voList.add(vo);
+        }
+        return voList;
+
     }
 }

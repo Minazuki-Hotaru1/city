@@ -1,12 +1,14 @@
 package com.example.city.controller;
 
 
+import com.example.city.VO.AddressVO;
 import com.example.city.service.UserService;
 import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -23,6 +25,10 @@ public class UserController {
         return userService.userRegister(data);
     }
 
-
+    //获取所有企业用户信息，在地图上显示
+    @GetMapping("/userGetAllEn")
+    public List<AddressVO> getAllEn() {
+        return userService.getAllEn();
+    }
 
 }
