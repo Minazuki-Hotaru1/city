@@ -30,5 +30,17 @@ public class EnterpriseController {
         return enterpriseService.registration(data);
     }
 
+    //企业获取预约用户
+    @GetMapping("/getAllApp")
+    public Map<String, Object> getAllApp(@RequestParam String EnId) {
+        return enterpriseService.getAllApp(EnId);
+    }
+
+    //企业更新用户状态
+    @PutMapping("/appPass")
+    public Map<String, Object> appPass(@RequestParam String userId) {
+        return enterpriseService.appPass(userId);
+    }
+
 
 }

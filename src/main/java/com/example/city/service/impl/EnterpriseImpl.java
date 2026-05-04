@@ -1,18 +1,23 @@
 package com.example.city.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.example.city.VO.EnterpriseAppVO;
+import com.example.city.entity.Appointment;
 import com.example.city.entity.EnterpriseConfirm;
 import com.example.city.entity.Enterprise;
+import com.example.city.entity.User;
+import com.example.city.mapper.AppointmentMapper;
 import com.example.city.mapper.EnterpriseConfirmMapper;
 import com.example.city.mapper.EnterpriseMapper;
+import com.example.city.mapper.UserMapper;
 import com.example.city.service.EnterpriseService;
 import com.example.city.Utils.JwtUtil;
 import jakarta.annotation.Resource;
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class EnterpriseImpl implements EnterpriseService {
@@ -24,6 +29,10 @@ public class EnterpriseImpl implements EnterpriseService {
 
     @Resource
     private JwtUtil jwtUtil;
+    @Autowired
+    private AppointmentMapper appointmentMapper;
+    @Autowired
+    private UserMapper userMapper;
 
     @Override
     public Map<String, Object> login(String username, String password) {
@@ -98,4 +107,64 @@ public class EnterpriseImpl implements EnterpriseService {
     }
 
 
+    //企业用户获取自己的所有预约用户的方法，前端需要返回企业用户的id信息
+    @Override
+    public Map<String, Object> getAllApp(String EnId) {
+        Map<String, Object> result = new HashMap<>();
+        List<EnterpriseAppVO> voList = new ArrayList<>();
+        //先查询该企业的预约信息
+        List<Appointment> appList = appointmentMapper.selectList(
+                new QueryWrapper<Appointment>().eq("enterprise_id", EnId));
+        if(appList == null){
+            result.put("success", false);
+            result.put("message", "未获取到该企业的预约用户信息");
+            return result;
+        }
+        //根据表中的用户id来查询用户的信息,并存到voList中
+        for (Appointment appointment : appList) {
+            EnterpriseAppVO vo = new EnterpriseAppVO();
+            BeanUtils.copyProperties(appointment, vo);
+            //查询用户表
+            User user = userMapper.selectOne(
+                    new QueryWrapper<User>().eq("id",  appointment.getUserID())
+            );
+            vo.setId(appointment.getId());
+            vo.setUserId(user.getId());
+            vo.setUserName(user.getUsername());
+            vo.setUserAddress(user.getAddress());
+            vo.setAppStartTime(appointment.getStartTime());
+            vo.setAppEndTime(appointment.getEndTime());
+            vo.setAppStatus(appointment.getAppStatus());
+            voList.add(vo);
+        }
+        result.put("success", true);
+        result.put("appList", voList);
+        return result;
+    }
+
+
+    //当预约的用户到线下后，企业用户便可以通过这个用户审核，并且更改预约用户的状态
+    @Override
+    public Map<String, Object> appPass(String userId) {
+        Map<String, Object> result = new HashMap<>();
+        Appointment appointment = appointmentMapper.selectOne(
+                new QueryWrapper<Appointment>().eq("user_id", userId)
+        );
+        if(appointment.getUserID().equals("1") || appointment.getUserID().equals("2")){
+            result.put("success", false);
+            result.put("message", "请勿重复操作");
+            return result;
+        }
+        try {
+            appointment.setAppStatus("3");
+            appointmentMapper.updateById(appointment);
+            result.put("success", true);
+            result.put("message", "通过成功");
+            return result;
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", e.getMessage());
+            return result;
+        }
+    }
 }
