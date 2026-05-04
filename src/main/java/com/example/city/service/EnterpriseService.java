@@ -1,5 +1,8 @@
 package com.example.city.service;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.example.city.VO.EnterpriseAppVO;
+
 import java.util.Map;
 
 public interface EnterpriseService {
@@ -8,7 +11,7 @@ public interface EnterpriseService {
 
     Map<String, Object> registration(Map<String, Object> data);
 
-    Map<String, Object> getAllApp(String EnId);
+    Page<EnterpriseAppVO> getAllApp(String EnId, Long page, Long number);
 
     Map<String, Object> appPass(String id);
 }

@@ -1,6 +1,8 @@
 package com.example.city.controller;
 
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.example.city.VO.EnterpriseAppVO;
 import com.example.city.service.EnterpriseService;
 import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,10 +32,10 @@ public class EnterpriseController {
         return enterpriseService.registration(data);
     }
 
-    //企业获取预约用户
+    //企业分页获取预约用户
     @GetMapping("/getAllApp")
-    public Map<String, Object> getAllApp(@RequestParam String EnId) {
-        return enterpriseService.getAllApp(EnId);
+    public Page<EnterpriseAppVO> getAllApp(@RequestBody String enId, long page, long number) {
+        return enterpriseService.getAllApp(enId, page, number);
     }
 
     //企业更新用户状态

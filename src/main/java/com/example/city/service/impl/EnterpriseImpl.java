@@ -1,6 +1,7 @@
 package com.example.city.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.city.VO.EnterpriseAppVO;
 import com.example.city.entity.Appointment;
 import com.example.city.entity.EnterpriseConfirm;
@@ -107,18 +108,18 @@ public class EnterpriseImpl implements EnterpriseService {
     }
 
 
-    //企业用户获取自己的所有预约用户的方法，前端需要返回企业用户的id信息
+    //企业用户分页获取自己的所有预约用户的方法，前端需要返回企业用户的id信息
     @Override
-    public Map<String, Object> getAllApp(String EnId) {
-        Map<String, Object> result = new HashMap<>();
+    public Page<EnterpriseAppVO> getAllApp(String enId, Long page, Long number) {
         List<EnterpriseAppVO> voList = new ArrayList<>();
-        //先查询该企业的预约信息
-        List<Appointment> appList = appointmentMapper.selectList(
-                new QueryWrapper<Appointment>().eq("enterprise_id", EnId));
+        //分页查询该企业的预约信息
+        Page<Appointment> page1 = appointmentMapper.selectPage(
+                new Page<>(page, number), new QueryWrapper<Appointment>().eq("enterprise_id", enId)
+        );
+        List<Appointment> appList = page1.getRecords();
         if(appList == null){
-            result.put("success", false);
-            result.put("message", "未获取到该企业的预约用户信息");
-            return result;
+            //返回null，前端来进行判断
+            return null;
         }
         //根据表中的用户id来查询用户的信息,并存到voList中
         for (Appointment appointment : appList) {
@@ -134,12 +135,25 @@ public class EnterpriseImpl implements EnterpriseService {
             vo.setUserAddress(user.getAddress());
             vo.setAppStartTime(appointment.getStartTime());
             vo.setAppEndTime(appointment.getEndTime());
-            vo.setAppStatus(appointment.getAppStatus());
+
+            //传递给前端预约状态
+            String status = appointment.getAppStatus();
+            String statusText = switch (status) {
+                case "1" -> "已预约";
+                case "2" -> "已完成";
+                case "3" -> "已预约但未到达";
+                default -> "";
+            };
+
+            vo.setAppStatus(statusText);
             voList.add(vo);
         }
-        result.put("success", true);
-        result.put("appList", voList);
-        return result;
+
+        Page<EnterpriseAppVO> voPage = new Page<>();
+        BeanUtils.copyProperties(voList, voPage);
+        voPage.setRecords(voList);
+
+        return voPage;
     }
 
 
