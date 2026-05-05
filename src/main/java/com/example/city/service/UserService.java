@@ -13,4 +13,6 @@ public interface UserService {
     Map<String, Object> login(String username, String password);
 
     List<AddressVO> getAllEn();
+
+    Map<String, Object> userReserveEnterprise(String userId, String enterpriseId, String enterpriseType);
 }

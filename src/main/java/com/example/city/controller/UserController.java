@@ -31,4 +31,10 @@ public class UserController {
         return userService.getAllEn();
     }
 
+    //用户预约的接口
+    @PostMapping("/userReserveEnterprise")
+    public Map<String, Object> userReserveEnterprise(@RequestParam String userId, String enterpriseId, String enterpriseType) {
+
+    }
+
 }

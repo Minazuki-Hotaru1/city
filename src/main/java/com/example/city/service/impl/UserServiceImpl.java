@@ -11,9 +11,10 @@ import com.example.city.service.UserService;
 import jakarta.annotation.Resource;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 @Service
@@ -34,6 +35,8 @@ public class UserServiceImpl implements UserService{
     private EnterpriseStatusMapper enterpriseStatusMapper;
     @Resource
     private JwtUtil jwtUtil;
+    @Resource
+    private RestTemplate restTemplate;
 
 
     //普通用户注册方法
@@ -141,5 +144,49 @@ public class UserServiceImpl implements UserService{
         }
         return voList;
 
+    }
+
+    //判断用户能否进行预约的方法
+    @Override
+    public Map<String, Object> userReserveEnterprise(String userId, String enterpriseId, String enterpriseType) {
+        Map<String, Object> result = new HashMap<>();
+        //获取用户的地址信息以及企业的预约、地址信息
+        User user = userMapper.selectOne(new QueryWrapper<User>().eq("id", userId));
+        EnterpriseStatus enterpriseStatus = enterpriseStatusMapper.selectOne(
+                new QueryWrapper<EnterpriseStatus>().eq("enterprise_id", enterpriseId));
+        Address address =  addressMapper.selectOne(new QueryWrapper<Address>().eq("enterprise_id", enterpriseId));
+
+        //获取所有相同属性企业地址信息,方便后续对比
+        List<Enterprise>  enterpriseList = enterpriseMapper.selectList(
+                new QueryWrapper<Enterprise>().eq("type_id", enterpriseType));
+        List<Address> addressList =  new ArrayList<>();
+        for (Enterprise enterprise : enterpriseList) {
+            addressList = addressMapper.selectList(
+                    new QueryWrapper<Address>().eq("enterprise_id", enterprise.getId()));
+        }
+
+        //获取用户离得最近的三个企业，获取方式为直接对比经纬度相对位置
+        List<Object> distance = new ArrayList<>();
+        for (Address address1 : addressList) {
+            distance.add();
+        }
+
+
+        //通过高德地图api来获取用户到企业的距离
+        //先获取用户的地址信息
+        String userAddress = URLEncoder.encode(user.getLongitude() + "," + user.getLatitude(), StandardCharsets.UTF_8);
+
+
+        https://restapi.amap.com/v5/direction/driving?
+
+        return Map.of();
+    }
+
+    //企业用户预约条件成功的方法
+    public Map<String, Object> userReserveEnterpriseSuccess(String userId, String enterpriseId) {
+        Map<String, Object> result = new HashMap<>();
+        User user = userMapper.selectOne(new QueryWrapper<User>().eq("id", userId));
+
+        return result;
     }
 }
