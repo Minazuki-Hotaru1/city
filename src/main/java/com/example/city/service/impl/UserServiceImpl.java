@@ -16,6 +16,7 @@ import org.springframework.web.client.RestTemplate;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class UserServiceImpl implements UserService{
@@ -146,6 +147,10 @@ public class UserServiceImpl implements UserService{
 
     }
 
+
+    //创建一个用于这个方法内判断经纬度的对象
+
+
     //判断用户能否进行预约的方法
     @Override
     public Map<String, Object> userReserveEnterprise(String userId, String enterpriseId, String enterpriseType) {
@@ -156,21 +161,55 @@ public class UserServiceImpl implements UserService{
                 new QueryWrapper<EnterpriseStatus>().eq("enterprise_id", enterpriseId));
         Address address =  addressMapper.selectOne(new QueryWrapper<Address>().eq("enterprise_id", enterpriseId));
 
+        //先判断当前用户选择的企业的预约情况，如果为满，则直接返回不能预约
+        if(enterpriseStatus.getReservedCount().equals(enterpriseStatus.getReservationCapacity())){
+            result.put("success", false);
+            result.put("message", "当前企业预约为满，不可再进行预约");
+            return result;
+        }
+        // 后判断企业拥挤情况，要是拥挤程度不严重，则可以预约
+        if(Double.parseDouble(enterpriseStatus.getOnlineCount()) / Double.parseDouble(enterpriseStatus.getOnlineCapacity())  <= 0.8){
+            result.put("success", true);
+            return  result;
+        }
+
+        //当预约的程度大于0.8时，则使用以下的系统推荐方案
+
         //获取所有相同属性企业地址信息,方便后续对比
-        List<Enterprise>  enterpriseList = enterpriseMapper.selectList(
+        List<Enterprise> enterpriseList = enterpriseMapper.selectList(
                 new QueryWrapper<Enterprise>().eq("type_id", enterpriseType));
         List<Address> addressList =  new ArrayList<>();
         for (Enterprise enterprise : enterpriseList) {
-            addressList = addressMapper.selectList(
-                    new QueryWrapper<Address>().eq("enterprise_id", enterprise.getId()));
+            addressList.add(addressMapper.selectOne(
+                    new QueryWrapper<Address>().eq("enterprise_id", enterprise.getId())));
         }
 
         //获取用户离得最近的三个企业，获取方式为直接对比经纬度相对位置
-        List<Object> distance = new ArrayList<>();
+        Map<String, Double> distance = new HashMap<>();
         for (Address address1 : addressList) {
-            distance.add();
+            double lonDiff = Math.abs(
+                    Double.parseDouble(address1.getLongitude()) - Double.parseDouble(user.getLongitude())
+            );
+            double latDiff = Math.abs(
+                    Double.parseDouble(address1.getLatitude()) - Double.parseDouble(user.getLatitude())
+            );
+            // 避免除0
+            if (latDiff == 0) {
+                continue;
+            }
+            distance.put(address1.getEnterpriseID(), lonDiff / latDiff);
         }
 
+        Map<String, Double> small = distance.entrySet()
+                .stream()
+                .sorted(Map.Entry.comparingByValue()) // 按 value 升序
+                .limit(3) // 取最小的3个
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue,
+                        (e1, e2) -> e1,
+                        LinkedHashMap::new // 保持排序结果
+                ));
 
         //通过高德地图api来获取用户到企业的距离
         //先获取用户的地址信息
