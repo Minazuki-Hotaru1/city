@@ -12,6 +12,8 @@ import jakarta.annotation.Resource;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -167,14 +169,19 @@ public class UserServiceImpl implements UserService{
             result.put("message", "当前企业预约为满，不可再进行预约");
             return result;
         }
+        //判断在线人数是否已满
+        if(enterpriseStatus.getOnlineCount().equals(enterpriseStatus.getOnlineCapacity())){
+            result.put("success", false);
+            result.put("message", "当前企业在线人数已满，不推荐预约");
+            return result;
+        }
         // 后判断企业拥挤情况，要是拥挤程度不严重，则可以预约
         if(Double.parseDouble(enterpriseStatus.getOnlineCount()) / Double.parseDouble(enterpriseStatus.getOnlineCapacity())  <= 0.8){
             result.put("success", true);
-            return  result;
+            return result;
         }
 
         //当预约的程度大于0.8时，则使用以下的系统推荐方案
-
         //获取所有相同属性企业地址信息,方便后续对比
         List<Enterprise> enterpriseList = enterpriseMapper.selectList(
                 new QueryWrapper<Enterprise>().eq("type_id", enterpriseType));
@@ -211,14 +218,99 @@ public class UserServiceImpl implements UserService{
                         LinkedHashMap::new // 保持排序结果
                 ));
 
+        //分配权重，不同企业的驾车时间与拥挤情况权重不同
+        double wTime = 0.5;
+        double wCrowd = 0.5;
+        switch (enterpriseType) {
+            //医院, 就医更注重快速到达
+            case  "101" -> {
+                wTime = 0.7 ;
+                wCrowd = 0.3;
+            }
+            //停车场, 车位紧张，拥挤程度很关键
+            case  "102" -> {
+                wTime = 0.5;
+                wCrowd = 0.5;
+            }
+            //公园景点, 游玩体验受拥挤影响
+            case  "103" -> {
+                wTime = 0.4;
+                wCrowd = 0.6;
+            }
+            //新能源充电桩, 充电时间和车位都有影响
+            case  "104" -> {
+                wTime = 0.6;
+                wCrowd = 0.4;
+            }
+        }
+
+
         //通过高德地图api来获取用户到企业的距离
         //先获取用户的地址信息
         String userAddress = URLEncoder.encode(user.getLongitude() + "," + user.getLatitude(), StandardCharsets.UTF_8);
+        String enAddress;
+        //遍历三个数据的map，并存储到新map中
+        Map<String, Object> enTime = new HashMap<>();
+        for (String key : small.keySet()) {
+            Address address1 = addressMapper.selectOne(new QueryWrapper<Address>().eq("enterprise_id", key));
+            enAddress = URLEncoder.encode(address1.getLongitude() + "," + address1.getLatitude(), StandardCharsets.UTF_8);
+            String url = "https://restapi.amap.com/v5/direction/driving?"
+                    + "origin=" + userAddress
+                    + "&destination=" + enAddress
+                    + "&key=e052f376d6489de2f784770cf32eba4d";
+            String resultJson = restTemplate.getForObject(url, String.class);
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode root = mapper.readTree(resultJson);
+            JsonNode paths = root.path("route").path("paths");
+            int duration = paths.get(0).path("cost").path("duration").asInt();
+            enTime.put(key, duration);
+            try {
+                Thread.sleep(4000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
 
+        //遍历enTime MAp来计算权重, 其中场所越拥挤，驾车时间越长，Double越大。
+        Map<String, Double> weight =  new HashMap<>();
+        for(Map.Entry<String, Object> entry : enTime.entrySet()){
+            EnterpriseStatus enterpriseStatus1 = enterpriseStatusMapper.selectOne(
+                    new QueryWrapper<EnterpriseStatus>().eq("enterprise_id", entry.getKey()));
+            double onlineSituation = Double.parseDouble(enterpriseStatus1.getOnlineCount()) /
+                            Double.parseDouble(enterpriseStatus1.getOnlineCapacity());
+            weight.put(entry.getKey(), (Double.parseDouble((String) entry.getValue()) * wTime)
+                    +
+                    (onlineSituation * wCrowd));
+        }
 
-        https://restapi.amap.com/v5/direction/driving?
+        List<String> sortedKeys = weight.entrySet().stream()
+                .sorted(Map.Entry.comparingByValue())  // 按 value 排序
+                .map(Map.Entry::getKey)               // 取 key
+                .collect(Collectors.toList());
 
-        return Map.of();
+        //获取三个企业的信息Map
+        List<Map<String, Object>> resultList = new ArrayList<>();
+        for (String key : sortedKeys) {
+            Map<String, Object> map = new HashMap<>();
+            EnterpriseStatus enterpriseStatus1 = enterpriseStatusMapper.selectOne(
+                    new QueryWrapper<EnterpriseStatus>().eq("enterprise_id", key)
+            );
+            Enterprise enterprise = enterpriseMapper.selectOne(
+                    new QueryWrapper<Enterprise>().eq("id", key)
+            );
+            map.put("enterpriseId", key);
+            map.put("enterpriseName", enterprise.getRoles());
+            map.put("enTime", enTime.get(key));
+            map.put("onlineCount", enterpriseStatus1.getOnlineCount());
+            map.put("onlineCapacity", enterpriseStatus1.getOnlineCapacity());
+            resultList.add(map);
+        }
+
+        result.put("success", true);
+        result.put("message", "当前企业较为繁忙，推荐您预约以下企业");
+        result.put("enterpriseMap", resultList);
+        return result;
+
     }
 
     //企业用户预约条件成功的方法

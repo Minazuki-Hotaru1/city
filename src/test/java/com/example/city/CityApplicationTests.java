@@ -11,6 +11,7 @@ import com.example.city.entity.*;
 import com.example.city.mapper.*;
 import com.example.city.service.AdminService;
 import com.example.city.service.EnterpriseService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.javafaker.Faker;
 import jakarta.annotation.Resource;
 import org.junit.jupiter.api.Test;
@@ -265,6 +266,25 @@ class CityApplicationTests {
             }
             userMapper.insert(user);
         }
+
+    }
+
+    @Test
+    void test8() throws JsonProcessingException {
+        String url = "https://restapi.amap.com/v5/direction/driving?"
+                + "origin=" + "102.701,25.04782"
+                + "&destination=" + "102.707559,25.031808"
+                + "&key=e052f376d6489de2f784770cf32eba4d"
+                + "&show_fields=cost";
+        String resultJson = restTemplate.getForObject(url, String.class);
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode root = mapper.readTree(resultJson);
+
+        JsonNode paths = root.path("route").path("paths");
+
+        int duration = paths.get(0).path("cost").path("duration").asInt();
+
+        System.out.println("耗时：" + duration + "秒");
 
     }
 }
