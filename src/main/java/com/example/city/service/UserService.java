@@ -15,4 +15,6 @@ public interface UserService {
     List<AddressVO> getAllEn();
 
     Map<String, Object> userReserveEnterprise(String userId, String enterpriseId, String enterpriseType);
+
+    Map<String, Object> userReserveEnterpriseSuccess(Map<String, Object> data);
 }

@@ -31,10 +31,16 @@ public class UserController {
         return userService.getAllEn();
     }
 
-    //用户预约的接口
+    //判断用户能否预约的接口
     @PostMapping("/userReserveEnterprise")
     public Map<String, Object> userReserveEnterprise(@RequestParam String userId, String enterpriseId, String enterpriseType) {
         return userService.userReserveEnterprise(userId, enterpriseId, enterpriseType);
+    }
+
+    //用户预约的接口
+    @PutMapping("/userReserveEnterpriseSuccess")
+    public Map<String, Object> userReserveEnterpriseSuccess(@RequestBody Map<String, Object> data) {
+        return userService.userReserveEnterpriseSuccess(data);
     }
 
 }

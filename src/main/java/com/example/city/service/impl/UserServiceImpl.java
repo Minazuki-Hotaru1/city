@@ -8,8 +8,10 @@ import com.example.city.VO.AddressVO;
 import com.example.city.entity.*;
 import com.example.city.mapper.*;
 import com.example.city.service.UserService;
+import com.github.javafaker.App;
 import jakarta.annotation.Resource;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -45,6 +47,8 @@ public class UserServiceImpl implements UserService{
     private RestTemplate restTemplate;
     @Value("${amap.web-service-key:}")
     private String amapWebServiceKey;
+    @Autowired
+    private AppointmentMapper appointmentMapper;
 
 
     //普通用户注册方法
@@ -317,14 +321,6 @@ public class UserServiceImpl implements UserService{
 
     }
 
-    //企业用户预约条件成功的方法
-    public Map<String, Object> userReserveEnterpriseSuccess(String userId, String enterpriseId) {
-        Map<String, Object> result = new HashMap<>();
-        User user = userMapper.selectOne(new QueryWrapper<User>().eq("id", userId));
-
-        return result;
-    }
-
     private double calculateStraightDistance(String startLongitude, String startLatitude,
                                              String endLongitude, String endLatitude) {
         double startLon = Double.parseDouble(startLongitude);
@@ -337,5 +333,34 @@ public class UserServiceImpl implements UserService{
         double lonDiffKm = (endLon - startLon) * KM_PER_LATITUDE_DEGREE * Math.cos(avgLatRadians);
         double distanceKm = Math.sqrt(Math.pow(latDiffKm, 2) + Math.pow(lonDiffKm, 2));
         return Math.round(distanceKm * DISTANCE_SCALE) / DISTANCE_SCALE;
+    }
+
+    //企业用户预约条件成功的方法
+    @Override
+    public Map<String, Object> userReserveEnterpriseSuccess(Map<String, Object> data) {
+        Map<String, Object> result = new HashMap<>();
+        EnterpriseStatus enterpriseStatus = enterpriseStatusMapper.selectOne(
+                new QueryWrapper<EnterpriseStatus>().eq("enterprise_id", data.get("enterpriseId"))
+        );
+        Appointment appointment = new Appointment();
+        appointment.setUserID((String) data.get("userId"));
+        appointment.setEnterpriseID((String) data.get("enterpriseId"));
+        appointment.setStartTime((String) data.get("data") + data.get("startTime"));
+        appointment.setEndTime((String) data.get("data") + data.get("endTime"));
+        //1：已预约但未到现场 2： 已预约并到现场 3：预约未到现场 默认填入1
+        appointment.setAppStatus("1");
+        enterpriseStatus.setReservedCount(String.valueOf((Integer.parseInt(enterpriseStatus.getReservedCount()))+ 1));
+        try{
+            //添加并更新数据
+            enterpriseStatusMapper.updateById(enterpriseStatus);
+            appointmentMapper.insert(appointment);
+            result.put("success", true);
+            result.put("message", "预约成功");
+            return result;
+        } catch (Exception e){
+            result.put("success", false);
+            result.put("message", e.getMessage());
+            return result;
+        }
     }
 }
