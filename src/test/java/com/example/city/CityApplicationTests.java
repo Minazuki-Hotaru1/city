@@ -16,6 +16,7 @@ import com.github.javafaker.Faker;
 import jakarta.annotation.Resource;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.web.client.RestTemplate;
@@ -27,6 +28,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.Random;
 
@@ -56,6 +59,8 @@ class CityApplicationTests {
     private UserMapper userMapper;
     @Resource
     private AddressUtil addressUtil;
+    @Autowired
+    private AppointmentMapper appointmentMapper;
 
     @Test
     void contextLoads() {
@@ -286,8 +291,15 @@ class CityApplicationTests {
 //
 //        System.out.println("耗时：" + duration + "秒");
 
-        String a = "10";
-        System.out.println(a + 1);
 
+    }
+
+    @Test
+    void test9() throws IOException {
+        Appointment appointment = appointmentMapper.selectOne(
+                new QueryWrapper<Appointment>().eq("id", 100001)
+        );
+        String date = appointment.getStartTime().substring(0, 10);
+        System.out.println(date);
     }
 }

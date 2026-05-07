@@ -20,8 +20,11 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static org.apache.commons.lang3.StringUtils.substring;
 
 @Service
 public class UserServiceImpl implements UserService{
@@ -173,7 +176,9 @@ public class UserServiceImpl implements UserService{
         User user = userMapper.selectOne(new QueryWrapper<User>().eq("id", userId));
         EnterpriseStatus enterpriseStatus = enterpriseStatusMapper.selectOne(
                 new QueryWrapper<EnterpriseStatus>().eq("enterprise_id", enterpriseId));
-        Address address =  addressMapper.selectOne(new QueryWrapper<Address>().eq("enterprise_id", enterpriseId));
+        Appointment appointment = appointmentMapper.selectOne(
+                new QueryWrapper<Appointment>().eq("user_id", userId)
+        );
 
         //先判断当前用户选择的企业的预约情况，如果为满，则直接返回不能预约
         if(Double.parseDouble(enterpriseStatus.getReservedCount()) >= Double.parseDouble(enterpriseStatus.getReservationCapacity())){
@@ -185,6 +190,13 @@ public class UserServiceImpl implements UserService{
         if(Double.parseDouble(enterpriseStatus.getOnlineCount()) >= Double.parseDouble(enterpriseStatus.getOnlineCapacity())){
             result.put("success", false);
             result.put("message", "当前企业在线人数已满，不推荐预约");
+            return result;
+        }
+        //判断用户是否在今天预约了企业，如果预约了，则提示今天不能再预约企业了
+        LocalDate startDate = LocalDate.parse(appointment.getStartTime().substring(0, 10));
+        if(startDate.isEqual(LocalDate.now())){
+            result.put("success", false);
+            result.put("message", "您已在今天预约了企业，不可再进行预约");
             return result;
         }
         // 后判断企业拥挤情况，要是拥挤程度不严重，则可以预约
@@ -339,6 +351,19 @@ public class UserServiceImpl implements UserService{
     @Override
     public Map<String, Object> userReserveEnterpriseSuccess(Map<String, Object> data) {
         Map<String, Object> result = new HashMap<>();
+        //先判断数据库里面是否有与这个预约信息相同的日期，如果有，则返回提示不能再进行预约
+        List<Appointment> appointmentList = appointmentMapper.selectList(
+                new QueryWrapper<Appointment>().eq("user_id",  data.get("user_id"))
+        );
+            for (Appointment appointment : appointmentList) {
+                LocalDate startDate = LocalDate.parse(appointment.getStartTime().substring(0, 10));
+                if(startDate.isEqual(LocalDate.parse(((String)data.get("startTime")).substring(0, 10)))) {
+                    result.put("success", false);
+                    result.put("message", "您在该预约时间已预约其他企业，请重新选择日期");
+                    return result;
+                }
+        }
+
         EnterpriseStatus enterpriseStatus = enterpriseStatusMapper.selectOne(
                 new QueryWrapper<EnterpriseStatus>().eq("enterprise_id", data.get("enterpriseId"))
         );
