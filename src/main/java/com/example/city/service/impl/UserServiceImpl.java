@@ -10,6 +10,7 @@ import com.example.city.mapper.*;
 import com.example.city.service.UserService;
 import jakarta.annotation.Resource;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import tools.jackson.databind.JsonNode;
@@ -23,6 +24,8 @@ import java.util.stream.Collectors;
 @Service
 public class UserServiceImpl implements UserService{
 
+    private static final double KM_PER_LATITUDE_DEGREE = 111.32;
+    private static final double DISTANCE_SCALE = 1000.0;
 
     @Resource
     private UserMapper userMapper;
@@ -40,6 +43,8 @@ public class UserServiceImpl implements UserService{
     private JwtUtil jwtUtil;
     @Resource
     private RestTemplate restTemplate;
+    @Value("${amap.web-service-key:}")
+    private String amapWebServiceKey;
 
 
     //普通用户注册方法
@@ -117,6 +122,7 @@ public class UserServiceImpl implements UserService{
         for (Address address : addressList) {
             AddressVO vo = new AddressVO();
             BeanUtils.copyProperties(address, vo);
+            vo.setEnId(address.getEnterpriseID());
             //查询对应企业的名字
             Enterprise enterprise = enterpriseMapper.selectOne(
                     new QueryWrapper<Enterprise>().eq("id", address.getEnterpriseID())
@@ -131,6 +137,7 @@ public class UserServiceImpl implements UserService{
             vo.setTypeName(type.getTypeName());
 
 
+
             //查询对应企业的状态并存储
             EnterpriseStatus enterpriseStatus = enterpriseStatusMapper.selectOne(
                     new QueryWrapper<EnterpriseStatus>().eq("enterprise_id", address.getEnterpriseID())
@@ -140,6 +147,7 @@ public class UserServiceImpl implements UserService{
                 vo.setReservationCapacity(enterpriseStatus.getReservationCapacity());
                 vo.setOnlineCount(enterpriseStatus.getOnlineCount());
                 vo.setOnlineCapacity(enterpriseStatus.getOnlineCapacity());
+
             }
 
 
@@ -164,13 +172,13 @@ public class UserServiceImpl implements UserService{
         Address address =  addressMapper.selectOne(new QueryWrapper<Address>().eq("enterprise_id", enterpriseId));
 
         //先判断当前用户选择的企业的预约情况，如果为满，则直接返回不能预约
-        if(enterpriseStatus.getReservedCount().equals(enterpriseStatus.getReservationCapacity())){
+        if(Double.parseDouble(enterpriseStatus.getReservedCount()) >= Double.parseDouble(enterpriseStatus.getReservationCapacity())){
             result.put("success", false);
             result.put("message", "当前企业预约为满，不可再进行预约");
             return result;
         }
         //判断在线人数是否已满
-        if(enterpriseStatus.getOnlineCount().equals(enterpriseStatus.getOnlineCapacity())){
+        if(Double.parseDouble(enterpriseStatus.getOnlineCount()) >= Double.parseDouble(enterpriseStatus.getOnlineCapacity())){
             result.put("success", false);
             result.put("message", "当前企业在线人数已满，不推荐预约");
             return result;
@@ -181,7 +189,7 @@ public class UserServiceImpl implements UserService{
             return result;
         }
 
-        //当预约的程度大于0.8时，则使用以下的系统推荐方案
+        //当在线的程度大于0.8时，则使用以下的系统推荐方案
         //获取所有相同属性企业地址信息,方便后续对比
         List<Enterprise> enterpriseList = enterpriseMapper.selectList(
                 new QueryWrapper<Enterprise>().eq("type_id", enterpriseType));
@@ -194,17 +202,13 @@ public class UserServiceImpl implements UserService{
         //获取用户离得最近的三个企业，获取方式为直接对比经纬度相对位置
         Map<String, Double> distance = new HashMap<>();
         for (Address address1 : addressList) {
-            double lonDiff = Math.abs(
-                    Double.parseDouble(address1.getLongitude()) - Double.parseDouble(user.getLongitude())
-            );
-            double latDiff = Math.abs(
-                    Double.parseDouble(address1.getLatitude()) - Double.parseDouble(user.getLatitude())
-            );
             // 避免除0
-            if (latDiff == 0) {
-                continue;
-            }
-            distance.put(address1.getEnterpriseID(), lonDiff / latDiff);
+            distance.put(address1.getEnterpriseID(), calculateStraightDistance(
+                    user.getLongitude(),
+                    user.getLatitude(),
+                    address1.getLongitude(),
+                    address1.getLatitude()
+            ));
         }
 
         Map<String, Double> small = distance.entrySet()
@@ -257,7 +261,7 @@ public class UserServiceImpl implements UserService{
             String url = "https://restapi.amap.com/v5/direction/driving?"
                     + "origin=" + userAddress
                     + "&destination=" + enAddress
-                    + "&key=e052f376d6489de2f784770cf32eba4d";
+                    + "&key=" + amapWebServiceKey;
             String resultJson = restTemplate.getForObject(url, String.class);
             ObjectMapper mapper = new ObjectMapper();
             JsonNode root = mapper.readTree(resultJson);
@@ -278,7 +282,7 @@ public class UserServiceImpl implements UserService{
                     new QueryWrapper<EnterpriseStatus>().eq("enterprise_id", entry.getKey()));
             double onlineSituation = Double.parseDouble(enterpriseStatus1.getOnlineCount()) /
                             Double.parseDouble(enterpriseStatus1.getOnlineCapacity());
-            weight.put(entry.getKey(), (Double.parseDouble((String) entry.getValue()) * wTime)
+            weight.put(entry.getKey(), (Double.parseDouble(String.valueOf(entry.getValue())) * wTime)
                     +
                     (onlineSituation * wCrowd));
         }
@@ -319,5 +323,19 @@ public class UserServiceImpl implements UserService{
         User user = userMapper.selectOne(new QueryWrapper<User>().eq("id", userId));
 
         return result;
+    }
+
+    private double calculateStraightDistance(String startLongitude, String startLatitude,
+                                             String endLongitude, String endLatitude) {
+        double startLon = Double.parseDouble(startLongitude);
+        double startLat = Double.parseDouble(startLatitude);
+        double endLon = Double.parseDouble(endLongitude);
+        double endLat = Double.parseDouble(endLatitude);
+
+        double latDiffKm = (endLat - startLat) * KM_PER_LATITUDE_DEGREE;
+        double avgLatRadians = Math.toRadians((startLat + endLat) / 2);
+        double lonDiffKm = (endLon - startLon) * KM_PER_LATITUDE_DEGREE * Math.cos(avgLatRadians);
+        double distanceKm = Math.sqrt(Math.pow(latDiffKm, 2) + Math.pow(lonDiffKm, 2));
+        return Math.round(distanceKm * DISTANCE_SCALE) / DISTANCE_SCALE;
     }
 }

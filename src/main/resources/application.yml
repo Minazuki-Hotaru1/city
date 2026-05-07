@@ -14,3 +14,6 @@ server:
 jwt:
   secret: city-project-jwt-secret-key-city-project-2026
   expiration: 86400000
+
+amap:
+  web-service-key: ${AMAP_WEB_SERVICE_KEY:}
