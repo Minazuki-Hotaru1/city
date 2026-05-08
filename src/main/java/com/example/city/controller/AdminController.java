@@ -40,9 +40,18 @@ public class AdminController {
 //    }
 
     @GetMapping("/getConfirm")
-    public Page<ConfirmVO> getConfirm(@RequestParam long page, long number) {
-        return adminService.getConfirm(page, number);
+    public Page<ConfirmVO> getConfirm(@RequestParam long page,
+                                      @RequestParam long number,
+                                      @RequestParam(defaultValue = "pending") String reviewStatus) {
+        return adminService.getConfirm(page, number, reviewStatus);
 
+    }
+
+    @GetMapping("/getNewConfirmCount")
+    public Map<String, Object> getNewConfirmCount() {
+        Map<String, Object> result = new HashMap<>();
+        result.put("count", adminService.getNewConfirmCount());
+        return result;
     }
 
     //测试

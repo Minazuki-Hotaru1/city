@@ -1,4 +1,6 @@
 spring:
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
   datasource:
     url: jdbc:mysql://127.0.0.1:3306/city?useSSL=false&allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
     username: root
@@ -17,3 +19,7 @@ jwt:
 
 amap:
   web-service-key: ${AMAP_WEB_SERVICE_KEY:}
+
+legacy-geocode:
+  id: ${LEGACY_GEOCODE_ID:}
+  key: ${LEGACY_GEOCODE_KEY:}

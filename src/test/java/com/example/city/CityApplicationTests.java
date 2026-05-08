@@ -61,6 +61,8 @@ class CityApplicationTests {
     private AddressUtil addressUtil;
     @Autowired
     private AppointmentMapper appointmentMapper;
+    @Resource
+    private EnterpriseStatusMapper enterpriseStatusMapper;
 
     @Test
     void contextLoads() {
@@ -184,9 +186,22 @@ class CityApplicationTests {
     }
 
     @Test
-    void test4() {
-        Map<String, Object> map = getLatAndLong.getLatAndLong("星星充电汽车充电站(永云新能源学府路充电站)");
-        System.out.println(map);
+    void test4 () throws IOException {
+        List<Address> addressList = addressMapper.selectList(null);
+        for (Address address : addressList) {
+            if(address.getLongitude() == null){
+                Map<String, Object> map = getLatAndLong.getLatAndLong(address.getAddressName());
+                address.setLatitude((String) map.get("lat"));
+                address.setLongitude((String) map.get("lng"));
+                addressMapper.updateById(address);
+                try{
+                    Thread.sleep(9000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+            }
+        }
     }
 
     @Test
@@ -301,5 +316,68 @@ class CityApplicationTests {
         );
         String date = appointment.getStartTime().substring(0, 10);
         System.out.println(date);
+    }
+
+    @Test
+    void generateEnterpriseStatus() {
+        List<Enterprise> enterpriseList = enterpriseMapper.selectList(null);
+        Random random = new Random();
+
+        for (Enterprise enterprise : enterpriseList) {
+            // 检查是否已存在该企业的状态记录，已存在则跳过
+            EnterpriseStatus exist = enterpriseStatusMapper.selectOne(
+                    new QueryWrapper<EnterpriseStatus>().eq("enterprise_id", enterprise.getId())
+            );
+            if (exist != null) {
+                System.out.println("企业 " + enterprise.getRoles() + " (id=" + enterprise.getId() + ") 已有状态记录，跳过");
+                continue;
+            }
+
+            EnterpriseStatus status = new EnterpriseStatus();
+            status.setEnterpriseID(enterprise.getId());
+
+            String typeId = enterprise.getTypeID();
+            int reservationCapacity;
+            int onlineCapacity;
+
+            switch (typeId) {
+                case "101" -> { // 医院：预约量大，在线容量高
+                    reservationCapacity = 200 + random.nextInt(301);
+                    onlineCapacity = 500 + random.nextInt(1001);
+                }
+                case "102" -> { // 停车场：车位有限，容量较小
+                    reservationCapacity = 30 + random.nextInt(91);
+                    onlineCapacity = 30 + random.nextInt(91);
+                }
+                case "103" -> { // 公园景点：游客容量大，预约量高
+                    reservationCapacity = 500 + random.nextInt(1501);
+                    onlineCapacity = 2000 + random.nextInt(3001);
+                }
+                case "104" -> { // 充电桩：充电位稀缺，容量很小
+                    reservationCapacity = 8 + random.nextInt(23);
+                    onlineCapacity = 8 + random.nextInt(23);
+                }
+                default -> { // 其他类型：默认中等容量
+                    reservationCapacity = 50 + random.nextInt(151);
+                    onlineCapacity = 100 + random.nextInt(201);
+                }
+            }
+
+            // 当前已预约数：0 到 reservationCapacity 的 80% 之间随机
+            int reservedCount = (int) (reservationCapacity * 0.2) + random.nextInt((int) (reservationCapacity * 0.6));
+            // 当前在线数：0 到 onlineCapacity 的 90% 之间随机
+            int onlineCount = (int) (onlineCapacity * 0.1) + random.nextInt((int) (onlineCapacity * 0.7));
+
+            status.setReservedCount(String.valueOf(reservedCount));
+            status.setReservationCapacity(String.valueOf(reservationCapacity));
+            status.setOnlineCount(String.valueOf(onlineCount));
+            status.setOnlineCapacity(String.valueOf(onlineCapacity));
+
+            enterpriseStatusMapper.insert(status);
+            System.out.println("已生成企业状态: " + enterprise.getRoles()
+                    + " (type=" + typeId + ")"
+                    + " | 预约 " + reservedCount + "/" + reservationCapacity
+                    + " | 在线 " + onlineCount + "/" + onlineCapacity);
+        }
     }
 }

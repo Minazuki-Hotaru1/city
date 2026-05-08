@@ -17,4 +17,6 @@ public interface UserService {
     Map<String, Object> userReserveEnterprise(String userId, String enterpriseId, String enterpriseType);
 
     Map<String, Object> userReserveEnterpriseSuccess(Map<String, Object> data);
+
+    Map<String, Object> getUserLocation(String userId);
 }

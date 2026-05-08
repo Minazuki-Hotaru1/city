@@ -43,4 +43,10 @@ public class UserController {
         return userService.userReserveEnterpriseSuccess(data);
     }
 
+    //获取用户地址
+    @GetMapping("/getUserLocation")
+    public Map<String, Object> getUserLocation(@RequestParam String userId) {
+        return userService.getUserLocation(userId);
+    }
+
 }

@@ -90,15 +90,18 @@ public class AdminServiceImpl implements AdminService {
     //分页查询需要审核的注册用户
     //只查询have_see_it为1或2的用户，3表示审核通过，4表示审核不通过
     @Override
-    public Page<ConfirmVO> getConfirm(long page, long number) {
+    public Page<ConfirmVO> getConfirm(long page, long number, String reviewStatus) {
         Page<EnterpriseConfirm> page1 = new Page<>(page, number);
 
         QueryWrapper<EnterpriseConfirm> wrapper = new QueryWrapper<>();
-        wrapper.eq("have_see_it", "1")
-                .or()
-                .eq("have_see_it", "2");
+        if ("reviewed".equals(reviewStatus)) {
+            wrapper.in("have_see_it", "3", "4");
+        } else if ("pending".equals(reviewStatus)) {
+            wrapper.in("have_see_it", "1", "2");
+        }
+        wrapper.orderByDesc("id");
 
-        Page<EnterpriseConfirm> result = enterpriseConfirmMapper.selectPage(page1, null);
+        Page<EnterpriseConfirm> result = enterpriseConfirmMapper.selectPage(page1, wrapper);
         List<EnterpriseConfirm> confirms = result.getRecords();
 
         List<ConfirmVO> voList = new ArrayList<>();
@@ -120,9 +123,18 @@ public class AdminServiceImpl implements AdminService {
         BeanUtils.copyProperties(result, voPage);
         voPage.setRecords(voList);
 
-        confirmAsyncService.updateHaveSeeIt(confirms);
+        if ("pending".equals(reviewStatus)) {
+            confirmAsyncService.updateHaveSeeIt(confirms);
+        }
 
         return voPage;
+    }
+
+    @Override
+    public Long getNewConfirmCount() {
+        return enterpriseConfirmMapper.selectCount(
+                new QueryWrapper<EnterpriseConfirm>().eq("have_see_it", "1")
+        );
     }
 
     //企业用户账号审核通过方法方法
@@ -133,8 +145,6 @@ public class AdminServiceImpl implements AdminService {
         QueryWrapper<EnterpriseConfirm> wrapper = new QueryWrapper<>();
         wrapper.eq("id", id);
         EnterpriseConfirm confirm = enterpriseConfirmMapper.selectOne(wrapper);
-        confirm.setHaveSeeIt("3");
-        enterpriseConfirmMapper.update(confirm, wrapper);
         QueryWrapper<Enterprise> wapper1 = new QueryWrapper<>();
         wapper1.eq("username", confirm.getUsername());
         Enterprise enterprise = enterpriseMapper.selectOne(wapper1);
@@ -156,6 +166,7 @@ public class AdminServiceImpl implements AdminService {
         //存到地址表中
         Address address = new Address();
         try {
+            Map<String, Object> addressMap = getLatAndLong.getLatAndLong(confirm.getAddress());
             en.setId(null);
             enterpriseMapper.insert(en);
             //查询新添加的用户的id是多少
@@ -165,11 +176,12 @@ public class AdminServiceImpl implements AdminService {
             //添加到address表中
             address.setEnterpriseID(en1.getId());
             //通过地址获取lan和long
-            Map<String, Object> addressMap = getLatAndLong.getLatAndLong(confirm.getAddress());
-            address.setLatitude((String) addressMap.get("lat"));
-            address.setLongitude((String) addressMap.get("lng"));
+            address.setLatitude(String.valueOf(addressMap.get("lat")));
+            address.setLongitude(String.valueOf(addressMap.get("lng")));
             address.setAddressName(confirm.getAddress());
             addressMapper.insert(address);
+            confirm.setHaveSeeIt("3");
+            enterpriseConfirmMapper.update(confirm, wrapper);
             result.put("success", true);
             return result;
         } catch (Exception e) {

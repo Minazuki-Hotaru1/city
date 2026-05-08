@@ -14,7 +14,9 @@ import java.util.Map;
 public interface AdminService {
     Map<String, Object> login(String username, String password);
 
-    Page<ConfirmVO> getConfirm(long page, long number);
+    Page<ConfirmVO> getConfirm(long page, long number, String reviewStatus);
+
+    Long getNewConfirmCount();
 
     Map<String, Object> approved(String id);
 

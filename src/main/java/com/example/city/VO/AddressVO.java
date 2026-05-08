@@ -9,6 +9,8 @@ public class AddressVO {
     private String enterpriseName;
     private String latitude;
     private String longitude;
+    private String userLatitude;
+    private String userLongitude;
     private String typeName;
     //获取状态
     //已预约人数

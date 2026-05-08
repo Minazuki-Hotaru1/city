@@ -121,7 +121,7 @@ public class UserServiceImpl implements UserService{
         return result;
     }
 
-    //查询所有企业以及状态，在地图上显示
+    //查询所有企业以及状态，在地图上显示，并查询用户当前地址，方便做比较
     @Override
     public List<AddressVO> getAllEn() {
         List<Address> addressList = addressMapper.selectList(null);
@@ -157,15 +157,11 @@ public class UserServiceImpl implements UserService{
 
             }
 
-
             voList.add(vo);
         }
         return voList;
 
     }
-
-
-    //创建一个用于这个方法内判断经纬度的对象
 
 
     //判断用户能否进行预约的方法
@@ -215,10 +211,12 @@ public class UserServiceImpl implements UserService{
                     new QueryWrapper<Address>().eq("enterprise_id", enterprise.getId())));
         }
 
-        //获取用户离得最近的三个企业，获取方式为直接对比经纬度相对位置
+        //获取用户离得最近的三个企业，排除用户原本选择的企业
         Map<String, Double> distance = new HashMap<>();
         for (Address address1 : addressList) {
-            // 避免除0
+            if (address1.getEnterpriseID().equals(enterpriseId)) {
+                continue;
+            }
             distance.put(address1.getEnterpriseID(), calculateStraightDistance(
                     user.getLongitude(),
                     user.getLatitude(),
@@ -277,15 +275,26 @@ public class UserServiceImpl implements UserService{
             String url = "https://restapi.amap.com/v5/direction/driving?"
                     + "origin=" + userAddress
                     + "&destination=" + enAddress
-                    + "&key=" + amapWebServiceKey;
+                    + "&key=e052f376d6489de2f784770cf32eba4d";
             String resultJson = restTemplate.getForObject(url, String.class);
             ObjectMapper mapper = new ObjectMapper();
             JsonNode root = mapper.readTree(resultJson);
             JsonNode paths = root.path("route").path("paths");
-            int duration = paths.get(0).path("cost").path("duration").asInt();
+            int duration;
+            if (paths.isArray() && paths.size() > 0) {
+                duration = paths.get(0).path("cost").path("duration").asInt();
+            } else {
+                // 高德驾车路径获取失败时，用直线距离估算驾车时间（假设平均车速 30km/h）
+                double straightKm = calculateStraightDistance(
+                        user.getLongitude(), user.getLatitude(),
+                        address1.getLongitude(), address1.getLatitude()
+                );
+                duration = (int) (straightKm / 30.0 * 3600);
+                System.out.println("警告: 企业 " + key + " 高德驾车路径为空，使用直线距离估算 " + duration + "秒");
+            }
             enTime.put(key, duration);
             try {
-                Thread.sleep(4000);
+                Thread.sleep(400);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -347,7 +356,7 @@ public class UserServiceImpl implements UserService{
         return Math.round(distanceKm * DISTANCE_SCALE) / DISTANCE_SCALE;
     }
 
-    //企业用户预约条件成功的方法
+    //用户预约条件成功的方法
     @Override
     public Map<String, Object> userReserveEnterpriseSuccess(Map<String, Object> data) {
         Map<String, Object> result = new HashMap<>();
@@ -372,6 +381,7 @@ public class UserServiceImpl implements UserService{
         appointment.setEnterpriseID((String) data.get("enterpriseId"));
         appointment.setStartTime((String) data.get("data") + data.get("startTime"));
         appointment.setEndTime((String) data.get("data") + data.get("endTime"));
+        appointment.setRemarks((String) data.get("remarks"));
         //1：已预约但未到现场 2： 已预约并到现场 3：预约未到现场 默认填入1
         appointment.setAppStatus("1");
         enterpriseStatus.setReservedCount(String.valueOf((Integer.parseInt(enterpriseStatus.getReservedCount()))+ 1));
@@ -387,5 +397,16 @@ public class UserServiceImpl implements UserService{
             result.put("message", e.getMessage());
             return result;
         }
+    }
+
+    //获取用户地址信息
+    @Override
+    public Map<String, Object> getUserLocation(String userId){
+        User user = userMapper.selectOne(new QueryWrapper<User>().eq("id", userId));
+        Map<String, Object> result = new HashMap<>();
+        result.put("latitude", user.getLatitude());
+        result.put("longitude", user.getLongitude());
+        result.put("address", user.getAddress());
+        return result;
     }
 }
