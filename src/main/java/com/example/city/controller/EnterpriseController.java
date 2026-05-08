@@ -32,10 +32,16 @@ public class EnterpriseController {
         return enterpriseService.registration(data);
     }
 
-    //企业分页获取预约用户
+    //企业分页获取所有预约用户
     @GetMapping("/getAllApp")
     public Page<EnterpriseAppVO> getAllApp(@RequestBody String enId, long page, long number) {
         return enterpriseService.getAllApp(enId, page, number);
+    }
+
+    //企业分页获取待到场预约（仅状态为1）
+    @GetMapping("/getPendingApp")
+    public Page<EnterpriseAppVO> getPendingApp(String enId, long page, long number) {
+        return enterpriseService.getPendingApp(enId, page, number);
     }
 
     //企业更新用户状态

@@ -380,4 +380,58 @@ class CityApplicationTests {
                     + " | 在线 " + onlineCount + "/" + onlineCapacity);
         }
     }
+
+    @Test
+    void generateAppointments() {
+        List<User> userList = userMapper.selectList(null);
+        List<Enterprise> enterpriseList = enterpriseMapper.selectList(null);
+        Random random = new Random();
+
+        LocalDate startDate = LocalDate.of(2026, 1, 1);
+        LocalDate endDate = LocalDate.of(2026, 4, 30);
+        long daysBetween = endDate.toEpochDay() - startDate.toEpochDay();
+
+        for (int i = 0; i < 1000; i++) {
+            User user = userList.get(random.nextInt(userList.size()));
+            Enterprise enterprise = enterpriseList.get(random.nextInt(enterpriseList.size()));
+
+            // 随机日期：2026-01-01 ~ 2026-04-30
+            LocalDate date = startDate.plusDays(random.nextInt((int) daysBetween + 1));
+
+            // 随机开始时间：8:00 ~ 18:00（给结束时间留空间）
+            int startHour = 8 + random.nextInt(11);  // 8~18
+            int startMinute = random.nextInt(60);
+
+            // 随机持续时长：1~3 小时，且不晚于 20:00
+            int maxDurationHours = 20 - startHour;
+            int durationHours = 1 + random.nextInt(Math.min(3, maxDurationHours));
+            int endHour = startHour + durationHours;
+            int endMinute = startMinute + random.nextInt(60);
+            if (endMinute >= 60) {
+                endMinute -= 60;
+                endHour += 1;
+            }
+            if (endHour > 20 || (endHour == 20 && endMinute > 0)) {
+                endHour = 20;
+                endMinute = 0;
+            }
+
+            String startTime = String.format("%s %02d:%02d:00", date, startHour, startMinute);
+            String endTime = String.format("%s %02d:%02d:00", date, endHour, endMinute);
+
+            // 预约状态：1=已预约未到, 2=已到现场, 3=预约未到
+            int status = 1 + random.nextInt(3);
+
+            Appointment appointment = new Appointment();
+            appointment.setUserID(user.getId());
+            appointment.setEnterpriseID(enterprise.getId());
+            appointment.setStartTime(startTime);
+            appointment.setEndTime(endTime);
+            appointment.setAppStatus(String.valueOf(status));
+            appointment.setRemarks(null);
+
+            appointmentMapper.insert(appointment);
+        }
+        System.out.println("已生成 1000 条预约记录");
+    }
 }

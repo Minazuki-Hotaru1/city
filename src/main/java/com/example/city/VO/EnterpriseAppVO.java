@@ -13,4 +13,5 @@ public class EnterpriseAppVO {
     private String appStartTime;
     private String appEndTime;
     private String appStatus;
+    private String remarks;
 }
