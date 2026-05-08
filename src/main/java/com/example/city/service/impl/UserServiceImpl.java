@@ -172,7 +172,7 @@ public class UserServiceImpl implements UserService{
         User user = userMapper.selectOne(new QueryWrapper<User>().eq("id", userId));
         EnterpriseStatus enterpriseStatus = enterpriseStatusMapper.selectOne(
                 new QueryWrapper<EnterpriseStatus>().eq("enterprise_id", enterpriseId));
-        Appointment appointment = appointmentMapper.selectOne(
+        List<Appointment> appointmentList = appointmentMapper.selectList(
                 new QueryWrapper<Appointment>().eq("user_id", userId)
         );
 
@@ -189,11 +189,13 @@ public class UserServiceImpl implements UserService{
             return result;
         }
         //判断用户是否在今天预约了企业，如果预约了，则提示今天不能再预约企业了
-        LocalDate startDate = LocalDate.parse(appointment.getStartTime().substring(0, 10));
-        if(startDate.isEqual(LocalDate.now())){
-            result.put("success", false);
-            result.put("message", "您已在今天预约了企业，不可再进行预约");
-            return result;
+        for (Appointment appointment : appointmentList) {
+            LocalDate startDate = LocalDate.parse(appointment.getStartTime().substring(0, 10));
+            if(startDate.isEqual(LocalDate.now())){
+                result.put("success", false);
+                result.put("message", "您已在今天预约了企业，不可再进行预约");
+                return result;
+            }
         }
         // 后判断企业拥挤情况，要是拥挤程度不严重，则可以预约
         if(Double.parseDouble(enterpriseStatus.getOnlineCount()) / Double.parseDouble(enterpriseStatus.getOnlineCapacity())  <= 0.8){

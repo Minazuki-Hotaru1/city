@@ -192,6 +192,43 @@ public class EnterpriseImpl implements EnterpriseService {
         return voPage;
     }
 
+    //查询该企业所有预约（状态1/2/3），按预约开始时间从新到旧排列
+    @Override
+    public Page<EnterpriseAppVO> getAllAppSorted(String enId, Long page, Long number) {
+        List<EnterpriseAppVO> voList = new ArrayList<>();
+        Page<Appointment> page1 = appointmentMapper.selectPage(
+                new Page<>(page, number),
+                new QueryWrapper<Appointment>()
+                        .eq("enterprise_id", enId)
+                        .in("app_status", "1", "2", "3")
+                        .orderByDesc("app_start_time")
+        );
+        List<Appointment> appList = page1.getRecords();
+        if (appList == null || appList.isEmpty()) {
+            return null;
+        }
+        for (Appointment appointment : appList) {
+            EnterpriseAppVO vo = new EnterpriseAppVO();
+            User user = userMapper.selectOne(
+                    new QueryWrapper<User>().eq("id", appointment.getUserID())
+            );
+            vo.setId(appointment.getId());
+            vo.setUserId(user.getId());
+            vo.setUserName(user.getUsername());
+            vo.setUserAddress(user.getAddress());
+            vo.setAppStartTime(appointment.getStartTime());
+            vo.setAppEndTime(appointment.getEndTime());
+            vo.setAppStatus(appointment.getAppStatus());
+            vo.setRemarks(appointment.getRemarks());
+            voList.add(vo);
+        }
+
+        Page<EnterpriseAppVO> voPage = new Page<>();
+        BeanUtils.copyProperties(page1, voPage);
+        voPage.setRecords(voList);
+        return voPage;
+    }
+
     //当预约的用户到线下后，企业用户便可以通过这个用户审核，并且更改预约用户的状态
     @Override
     public Map<String, Object> appPass(String userId) {

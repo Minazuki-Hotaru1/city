@@ -15,5 +15,7 @@ public interface EnterpriseService {
 
     Page<EnterpriseAppVO> getPendingApp(String enId, Long page, Long number);
 
+    Page<EnterpriseAppVO> getAllAppSorted(String enId, Long page, Long number);
+
     Map<String, Object> appPass(String id);
 }

@@ -34,14 +34,20 @@ public class EnterpriseController {
 
     //企业分页获取所有预约用户
     @GetMapping("/getAllApp")
-    public Page<EnterpriseAppVO> getAllApp(@RequestBody String enId, long page, long number) {
+    public Page<EnterpriseAppVO> getAllApp(@RequestParam String enId, @RequestParam long page, @RequestParam long number) {
         return enterpriseService.getAllApp(enId, page, number);
     }
 
     //企业分页获取待到场预约（仅状态为1）
     @GetMapping("/getPendingApp")
-    public Page<EnterpriseAppVO> getPendingApp(String enId, long page, long number) {
+    public Page<EnterpriseAppVO> getPendingApp(@RequestParam String enId, @RequestParam long page, @RequestParam long number) {
         return enterpriseService.getPendingApp(enId, page, number);
+    }
+
+    //企业分页获取所有预约（状态1/2/3），按日期从新到旧排列
+    @GetMapping("/getAllAppSorted")
+    public Page<EnterpriseAppVO> getAllAppSorted(@RequestParam String enId, @RequestParam long page, @RequestParam long number) {
+        return enterpriseService.getAllAppSorted(enId, page, number);
     }
 
     //企业更新用户状态
