@@ -56,5 +56,10 @@ public class EnterpriseController {
         return enterpriseService.appPass(userId);
     }
 
+    //获取企业预约柱状图数据
+    @GetMapping("/getAppointmentChart")
+    public Map<String, Object> getAppointmentChart(@RequestParam String enId) {
+        return enterpriseService.getAppointmentChart(enId);
+    }
 
 }

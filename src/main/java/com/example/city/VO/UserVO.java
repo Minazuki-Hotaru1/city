@@ -13,4 +13,5 @@ public class UserVO {
     private String appSecret;
     private String startTime;
     private String endTime;
+    private Integer appointmentCount;
 }

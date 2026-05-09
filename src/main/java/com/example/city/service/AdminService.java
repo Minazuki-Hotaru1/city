@@ -30,6 +30,8 @@ public interface AdminService {
 
     Page<UserVO> getAllUserPage(long page, long number);
 
+    List<Map<String, Object>> getUserAppointments(String userId);
+
     Map<String, Object> getEnStatus(String id);
 
 

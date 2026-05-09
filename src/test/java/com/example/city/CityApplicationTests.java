@@ -391,7 +391,7 @@ class CityApplicationTests {
         LocalDate endDate = LocalDate.of(2026, 4, 30);
         long daysBetween = endDate.toEpochDay() - startDate.toEpochDay();
 
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < 5000; i++) {
             User user = userList.get(random.nextInt(userList.size()));
             Enterprise enterprise = enterpriseList.get(random.nextInt(enterpriseList.size()));
 
@@ -432,6 +432,6 @@ class CityApplicationTests {
 
             appointmentMapper.insert(appointment);
         }
-        System.out.println("已生成 1000 条预约记录");
+        System.out.println("已生成 5000 条预约记录");
     }
 }

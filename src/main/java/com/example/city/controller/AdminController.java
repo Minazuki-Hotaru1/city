@@ -110,4 +110,9 @@ public class AdminController {
     Page<UserVO> getAllUserPage(@RequestParam long page, long number) {
         return adminService.getAllUserPage(page, number);
     }
+
+    @GetMapping("/getUserAppointments")
+    List<Map<String, Object>> getUserAppointments(@RequestParam String userId) {
+        return adminService.getUserAppointments(userId);
+    }
 }

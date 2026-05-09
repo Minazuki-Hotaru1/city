@@ -49,4 +49,10 @@ public class UserController {
         return userService.getUserLocation(userId);
     }
 
+    //获取用户的所有预约记录
+    @GetMapping("/getMyAppointments")
+    public List<Map<String, Object>> getUserAppointments(@RequestParam String userId) {
+        return userService.getUserAppointments(userId);
+    }
+
 }

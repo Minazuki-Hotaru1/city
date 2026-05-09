@@ -18,4 +18,6 @@ public interface EnterpriseService {
     Page<EnterpriseAppVO> getAllAppSorted(String enId, Long page, Long number);
 
     Map<String, Object> appPass(String id);
+
+    Map<String, Object> getAppointmentChart(String enId);
 }

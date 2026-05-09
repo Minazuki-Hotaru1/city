@@ -6,6 +6,7 @@ import lombok.Data;
 public class AddressVO {
     private String id;
     private String enId;
+    private String addressName;
     private String enterpriseName;
     private String latitude;
     private String longitude;

@@ -19,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class EnterpriseImpl implements EnterpriseService {
@@ -227,6 +228,53 @@ public class EnterpriseImpl implements EnterpriseService {
         BeanUtils.copyProperties(page1, voPage);
         voPage.setRecords(voList);
         return voPage;
+    }
+
+    //获取该企业预约柱状图数据，按日期分组，统计各状态数量
+    @Override
+    public Map<String, Object> getAppointmentChart(String enId) {
+        Map<String, Object> result = new HashMap<>();
+        List<Appointment> appointments = appointmentMapper.selectList(
+                new QueryWrapper<Appointment>().eq("enterprise_id", enId));
+
+        if (appointments == null || appointments.isEmpty()) {
+            result.put("dates", Collections.emptyList());
+            result.put("status1", Collections.emptyList());
+            result.put("status2", Collections.emptyList());
+            result.put("status3", Collections.emptyList());
+            return result;
+        }
+
+        // 按日期排序并提取日期列表
+        List<String> dates = appointments.stream()
+                .map(a -> a.getStartTime() != null && a.getStartTime().length() >= 10
+                        ? a.getStartTime().substring(0, 10) : "未知")
+                .distinct()
+                .sorted()
+                .collect(Collectors.toList());
+
+        // 按日期统计各状态数量
+        List<Integer> status1Counts = new ArrayList<>();
+        List<Integer> status2Counts = new ArrayList<>();
+        List<Integer> status3Counts = new ArrayList<>();
+
+        for (String date : dates) {
+            long s1 = appointments.stream().filter(a ->
+                    a.getStartTime() != null && a.getStartTime().startsWith(date) && "1".equals(a.getAppStatus())).count();
+            long s2 = appointments.stream().filter(a ->
+                    a.getStartTime() != null && a.getStartTime().startsWith(date) && "2".equals(a.getAppStatus())).count();
+            long s3 = appointments.stream().filter(a ->
+                    a.getStartTime() != null && a.getStartTime().startsWith(date) && "3".equals(a.getAppStatus())).count();
+            status1Counts.add((int) s1);
+            status2Counts.add((int) s2);
+            status3Counts.add((int) s3);
+        }
+
+        result.put("dates", dates);
+        result.put("status1", status1Counts);
+        result.put("status2", status2Counts);
+        result.put("status3", status3Counts);
+        return result;
     }
 
     //当预约的用户到线下后，企业用户便可以通过这个用户审核，并且更改预约用户的状态

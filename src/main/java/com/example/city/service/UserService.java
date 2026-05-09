@@ -19,4 +19,6 @@ public interface UserService {
     Map<String, Object> userReserveEnterpriseSuccess(Map<String, Object> data);
 
     Map<String, Object> getUserLocation(String userId);
+
+    List<Map<String, Object>> getUserAppointments(String userId);
 }

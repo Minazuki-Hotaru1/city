@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class AdminServiceImpl implements AdminService {
@@ -293,27 +294,32 @@ public class AdminServiceImpl implements AdminService {
     }
 
 
-    //返回用户的信息以及预约的id、状态、预约时间
+    //返回用户信息及预约数量，按用户分页
     @Override
     public Page<UserVO> getAllUserPage(long page, long number) {
         Page<User> page1 = new Page<>(page, number);
         Page<User> result = userMapper.selectPage(page1, null);
         List<User> users = result.getRecords();
-        System.out.println(users.size());
+
+        // 批量查询每个用户的预约记录数
+        Set<String> userIds = users.stream()
+                .map(User::getId)
+                .collect(Collectors.toSet());
+        Map<String, Long> countMap = new HashMap<>();
+        if (!userIds.isEmpty()) {
+            List<Appointment> allAppointments = appointmentMapper.selectList(
+                    new QueryWrapper<Appointment>().in("user_id", userIds));
+            countMap = allAppointments.stream()
+                    .collect(Collectors.groupingBy(
+                            Appointment::getUserID,
+                            Collectors.counting()));
+        }
 
         List<UserVO> voList = new ArrayList<>();
-        for(User user : users){
+        for (User user : users) {
             UserVO vo = new UserVO();
             BeanUtils.copyProperties(user, vo);
-            Appointment appointment = appointmentMapper.selectOne(
-                    new QueryWrapper<Appointment>().eq("user_id", user.getId()));
-            if (appointment != null) {
-                vo.setAppID(appointment.getId() != null ? appointment.getId() : "0");
-                vo.setAppSecret(appointment.getAppStatus() != null ? appointment.getAppStatus() : "0");
-
-                vo.setStartTime(appointment.getStartTime() != null ? appointment.getAppStatus() : "0");
-                vo.setEndTime(appointment.getEndTime() != null ? appointment.getAppStatus() : "0");
-            }
+            vo.setAppointmentCount(countMap.getOrDefault(user.getId(), 0L).intValue());
             voList.add(vo);
         }
 
@@ -322,6 +328,29 @@ public class AdminServiceImpl implements AdminService {
         voPage.setRecords(voList);
 
         return voPage;
+    }
+
+    //根据用户id查询该用户的所有预约记录
+    @Override
+    public List<Map<String, Object>> getUserAppointments(String userId) {
+        QueryWrapper<Appointment> wrapper = new QueryWrapper<>();
+        wrapper.eq("user_id", userId)
+                .orderByDesc("id");
+        List<Appointment> appointments = appointmentMapper.selectList(wrapper);
+
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Appointment a : appointments) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("id", a.getId());
+            map.put("userId", a.getUserID());
+            map.put("enterpriseId", a.getEnterpriseID());
+            map.put("startTime", a.getStartTime());
+            map.put("endTime", a.getEndTime());
+            map.put("appStatus", a.getAppStatus());
+            map.put("remarks", a.getRemarks());
+            result.add(map);
+        }
+        return result;
     }
 
     //返回企业用户的预约、在线人数状态

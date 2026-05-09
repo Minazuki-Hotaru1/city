@@ -401,6 +401,31 @@ public class UserServiceImpl implements UserService{
         }
     }
 
+    //获取该用户的所有预约记录（含企业名称）
+    @Override
+    public List<Map<String, Object>> getUserAppointments(String userId) {
+        List<Appointment> appointments = appointmentMapper.selectList(
+                new QueryWrapper<Appointment>().eq("user_id", userId)
+                        .orderByDesc("id"));
+
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Appointment a : appointments) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("id", a.getId());
+            map.put("startTime", a.getStartTime());
+            map.put("endTime", a.getEndTime());
+            map.put("appStatus", a.getAppStatus());
+            map.put("remarks", a.getRemarks());
+
+            Enterprise enterprise = enterpriseMapper.selectOne(
+                    new QueryWrapper<Enterprise>().eq("id", a.getEnterpriseID()));
+            map.put("enterpriseName", enterprise != null ? enterprise.getRoles() : "未知企业");
+
+            result.add(map);
+        }
+        return result;
+    }
+
     //获取用户地址信息
     @Override
     public Map<String, Object> getUserLocation(String userId){
