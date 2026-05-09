@@ -34,5 +34,8 @@ public interface AdminService {
 
     Map<String, Object> getEnStatus(String id);
 
+    Map<String, Object> getAdminProfile(String adminId);
+
+    Map<String, Object> updateAdminPassword(Map<String, Object> data);
 
 }

@@ -380,4 +380,47 @@ public class AdminServiceImpl implements AdminService {
         return null;
 
     }
+
+    //获取管理员个人信息
+    @Override
+    public Map<String, Object> getAdminProfile(String adminId) {
+        Map<String, Object> result = new HashMap<>();
+        Admin admin = adminMapper.selectOne(new QueryWrapper<Admin>().eq("id", adminId));
+        if (admin == null) {
+            result.put("success", false);
+            result.put("message", "管理员不存在");
+            return result;
+        }
+        result.put("success", true);
+        result.put("username", admin.getUsername());
+        result.put("loginTime", admin.getLoginTime());
+        return result;
+    }
+
+    //修改管理员密码
+    @Override
+    public Map<String, Object> updateAdminPassword(Map<String, Object> data) {
+        Map<String, Object> result = new HashMap<>();
+        String adminId = (String) data.get("adminId");
+        String oldPassword = (String) data.get("oldPassword");
+        String newPassword = (String) data.get("newPassword");
+
+        Admin admin = adminMapper.selectOne(new QueryWrapper<Admin>().eq("id", adminId));
+        if (admin == null) {
+            result.put("success", false);
+            result.put("message", "管理员不存在");
+            return result;
+        }
+        if (!admin.getPassword().equals(oldPassword)) {
+            result.put("success", false);
+            result.put("message", "原密码错误");
+            return result;
+        }
+
+        admin.setPassword(newPassword);
+        adminMapper.updateById(admin);
+        result.put("success", true);
+        result.put("message", "密码修改成功");
+        return result;
+    }
 }

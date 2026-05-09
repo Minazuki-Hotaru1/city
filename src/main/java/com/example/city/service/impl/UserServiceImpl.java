@@ -426,6 +426,84 @@ public class UserServiceImpl implements UserService{
         return result;
     }
 
+    //获取用户个人信息
+    @Override
+    public Map<String, Object> getUserProfile(String userId) {
+        Map<String, Object> result = new HashMap<>();
+        User user = userMapper.selectOne(new QueryWrapper<User>().eq("id", userId));
+        if (user == null) {
+            result.put("success", false);
+            result.put("message", "用户不存在");
+            return result;
+        }
+        result.put("success", true);
+        result.put("username", user.getUsername());
+        result.put("address", user.getAddress());
+        result.put("latitude", user.getLatitude());
+        result.put("longitude", user.getLongitude());
+        return result;
+    }
+
+    //更新用户地址（重新获取经纬度）
+    @Override
+    public Map<String, Object> updateUserAddress(Map<String, Object> data) {
+        Map<String, Object> result = new HashMap<>();
+        String userId = (String) data.get("userId");
+        String newAddress = (String) data.get("address");
+
+        User user = userMapper.selectOne(new QueryWrapper<User>().eq("id", userId));
+        if (user == null) {
+            result.put("success", false);
+            result.put("message", "用户不存在");
+            return result;
+        }
+
+        try {
+            Map<String, Object> coords = getLatAndLong.getLatAndLong(newAddress);
+            user.setAddress(newAddress);
+            user.setLatitude(String.valueOf(coords.get("lat")));
+            user.setLongitude(String.valueOf(coords.get("lng")));
+            userMapper.updateById(user);
+
+            result.put("success", true);
+            result.put("message", "地址更新成功");
+            result.put("latitude", user.getLatitude());
+            result.put("longitude", user.getLongitude());
+            return result;
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", e.getMessage());
+            return result;
+        }
+    }
+
+    //修改用户密码
+    @Override
+    public Map<String, Object> updateUserPassword(Map<String, Object> data) {
+        Map<String, Object> result = new HashMap<>();
+        String userId = (String) data.get("userId");
+        String oldPassword = (String) data.get("oldPassword");
+        String newPassword = (String) data.get("newPassword");
+
+        User user = userMapper.selectOne(new QueryWrapper<User>().eq("id", userId));
+        if (user == null) {
+            result.put("success", false);
+            result.put("message", "用户不存在");
+            return result;
+        }
+        if (!user.getPassword().equals(oldPassword)) {
+            result.put("success", false);
+            result.put("message", "原密码错误");
+            return result;
+        }
+
+        user.setPassword(newPassword);
+        userMapper.updateById(user);
+        result.put("success", true);
+        result.put("message", "密码修改成功");
+        return result;
+    }
+
     //获取用户地址信息
     @Override
     public Map<String, Object> getUserLocation(String userId){

@@ -50,16 +50,34 @@ public class EnterpriseController {
         return enterpriseService.getAllAppSorted(enId, page, number);
     }
 
-    //企业更新用户状态
+    //企业确认用户到场
     @PutMapping("/appPass")
-    public Map<String, Object> appPass(@RequestParam String userId) {
-        return enterpriseService.appPass(userId);
+    public Map<String, Object> appPass(@RequestParam String appointmentId) {
+        return enterpriseService.appPass(appointmentId);
     }
 
     //获取企业预约柱状图数据
     @GetMapping("/getAppointmentChart")
     public Map<String, Object> getAppointmentChart(@RequestParam String enId) {
         return enterpriseService.getAppointmentChart(enId);
+    }
+
+    //获取企业个人信息
+    @GetMapping("/getEnterpriseProfile")
+    public Map<String, Object> getEnterpriseProfile(@RequestParam String enId) {
+        return enterpriseService.getEnterpriseProfile(enId);
+    }
+
+    //更新企业地址
+    @PutMapping("/updateEnterpriseAddress")
+    public Map<String, Object> updateEnterpriseAddress(@RequestBody Map<String, Object> data) {
+        return enterpriseService.updateEnterpriseAddress(data);
+    }
+
+    //修改企业密码
+    @PutMapping("/updateEnterprisePassword")
+    public Map<String, Object> updateEnterprisePassword(@RequestBody Map<String, Object> data) {
+        return enterpriseService.updateEnterprisePassword(data);
     }
 
 }

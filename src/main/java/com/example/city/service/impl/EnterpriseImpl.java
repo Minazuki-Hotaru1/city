@@ -3,14 +3,9 @@ package com.example.city.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.city.VO.EnterpriseAppVO;
-import com.example.city.entity.Appointment;
-import com.example.city.entity.EnterpriseConfirm;
-import com.example.city.entity.Enterprise;
-import com.example.city.entity.User;
-import com.example.city.mapper.AppointmentMapper;
-import com.example.city.mapper.EnterpriseConfirmMapper;
-import com.example.city.mapper.EnterpriseMapper;
-import com.example.city.mapper.UserMapper;
+import com.example.city.Utils.GetLatAndLong;
+import com.example.city.entity.*;
+import com.example.city.mapper.*;
 import com.example.city.service.EnterpriseService;
 import com.example.city.Utils.JwtUtil;
 import jakarta.annotation.Resource;
@@ -35,6 +30,12 @@ public class EnterpriseImpl implements EnterpriseService {
     private AppointmentMapper appointmentMapper;
     @Autowired
     private UserMapper userMapper;
+    @Autowired
+    private AddressMapper addressMapper;
+    @Resource
+    private GetLatAndLong getLatAndLong;
+    @Resource
+    private TypeMapper typeMapper;
 
     @Override
     public Map<String, Object> login(String username, String password) {
@@ -232,7 +233,7 @@ public class EnterpriseImpl implements EnterpriseService {
 
     //获取该企业预约柱状图数据，按日期分组，统计各状态数量
     @Override
-    public Map<String, Object> getAppointmentChart(String enId) {
+    public Map<String, Object>  getAppointmentChart(String enId) {
         Map<String, Object> result = new HashMap<>();
         List<Appointment> appointments = appointmentMapper.selectList(
                 new QueryWrapper<Appointment>().eq("enterprise_id", enId));
@@ -277,23 +278,117 @@ public class EnterpriseImpl implements EnterpriseService {
         return result;
     }
 
-    //当预约的用户到线下后，企业用户便可以通过这个用户审核，并且更改预约用户的状态
+    //获取企业个人信息
     @Override
-    public Map<String, Object> appPass(String userId) {
+    public Map<String, Object> getEnterpriseProfile(String enId) {
+        Map<String, Object> result = new HashMap<>();
+        Enterprise enterprise = enterpriseMapper.selectOne(
+                new QueryWrapper<Enterprise>().eq("id", enId));
+        if (enterprise == null) {
+            result.put("success", false);
+            result.put("message", "企业不存在");
+            return result;
+        }
+
+        Address address = addressMapper.selectOne(
+                new QueryWrapper<Address>().eq("enterprise_id", enId));
+        Type type = typeMapper.selectOne(
+                new QueryWrapper<Type>().eq("type_id", enterprise.getTypeID()));
+
+        result.put("success", true);
+        result.put("username", enterprise.getUsername());
+        result.put("enterpriseName", enterprise.getRoles());
+        result.put("typeName", type != null ? type.getTypeName() : "未知");
+        result.put("address", address != null ? address.getAddressName() : "");
+        result.put("latitude", address != null ? address.getLatitude() : "");
+        result.put("longitude", address != null ? address.getLongitude() : "");
+        return result;
+    }
+
+    //更新企业地址（重新获取经纬度）
+    @Override
+    public Map<String, Object> updateEnterpriseAddress(Map<String, Object> data) {
+        Map<String, Object> result = new HashMap<>();
+        String enId = (String) data.get("enId");
+        String newAddress = (String) data.get("address");
+
+        Address address = addressMapper.selectOne(
+                new QueryWrapper<Address>().eq("enterprise_id", enId));
+        if (address == null) {
+            result.put("success", false);
+            result.put("message", "未找到该企业的地址信息");
+            return result;
+        }
+
+        try {
+            Map<String, Object> coords = getLatAndLong.getLatAndLong(newAddress);
+            address.setAddressName(newAddress);
+            address.setLatitude(String.valueOf(coords.get("lat")));
+            address.setLongitude(String.valueOf(coords.get("lng")));
+            addressMapper.updateById(address);
+
+            result.put("success", true);
+            result.put("message", "地址更新成功");
+            result.put("latitude", address.getLatitude());
+            result.put("longitude", address.getLongitude());
+            return result;
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", e.getMessage());
+            return result;
+        }
+    }
+
+    //修改企业密码
+    @Override
+    public Map<String, Object> updateEnterprisePassword(Map<String, Object> data) {
+        Map<String, Object> result = new HashMap<>();
+        String enId = (String) data.get("enId");
+        String oldPassword = (String) data.get("oldPassword");
+        String newPassword = (String) data.get("newPassword");
+
+        Enterprise enterprise = enterpriseMapper.selectOne(
+                new QueryWrapper<Enterprise>().eq("id", enId));
+        if (enterprise == null) {
+            result.put("success", false);
+            result.put("message", "企业不存在");
+            return result;
+        }
+        if (!enterprise.getPassword().equals(oldPassword)) {
+            result.put("success", false);
+            result.put("message", "原密码错误");
+            return result;
+        }
+
+        enterprise.setPassword(newPassword);
+        enterpriseMapper.updateById(enterprise);
+        result.put("success", true);
+        result.put("message", "密码修改成功");
+        return result;
+    }
+
+    //当预约的用户到线下后，企业用户确认到场，更改预约状态为已到场
+    @Override
+    public Map<String, Object> appPass(String appointmentId) {
         Map<String, Object> result = new HashMap<>();
         Appointment appointment = appointmentMapper.selectOne(
-                new QueryWrapper<Appointment>().eq("user_id", userId)
+                new QueryWrapper<Appointment>().eq("id", appointmentId)
         );
-        if(appointment.getUserID().equals("1") || appointment.getUserID().equals("2")){
+        if (appointment == null) {
             result.put("success", false);
-            result.put("message", "请勿重复操作");
+            result.put("message", "预约记录不存在");
+            return result;
+        }
+        if ("2".equals(appointment.getAppStatus()) || "3".equals(appointment.getAppStatus())) {
+            result.put("success", false);
+            result.put("message", "该预约已处理，请勿重复操作");
             return result;
         }
         try {
-            appointment.setAppStatus("3");
+            appointment.setAppStatus("2");
             appointmentMapper.updateById(appointment);
             result.put("success", true);
-            result.put("message", "通过成功");
+            result.put("message", "确认到场成功");
             return result;
         } catch (Exception e) {
             result.put("success", false);

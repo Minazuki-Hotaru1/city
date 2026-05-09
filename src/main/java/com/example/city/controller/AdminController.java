@@ -115,4 +115,14 @@ public class AdminController {
     List<Map<String, Object>> getUserAppointments(@RequestParam String userId) {
         return adminService.getUserAppointments(userId);
     }
+
+    @GetMapping("/getAdminProfile")
+    Map<String, Object> getAdminProfile(@RequestParam String adminId) {
+        return adminService.getAdminProfile(adminId);
+    }
+
+    @PutMapping("/updateAdminPassword")
+    Map<String, Object> updateAdminPassword(@RequestBody Map<String, Object> data) {
+        return adminService.updateAdminPassword(data);
+    }
 }

@@ -31,6 +31,12 @@ public class UserController {
         return userService.getAllEn();
     }
 
+    //游客获取所有企业用户信息
+    @GetMapping("/guestGetAllEn")
+    public List<AddressVO> guestGetAllEn() {
+        return userService.getAllEn();
+    }
+
     //判断用户能否预约的接口
     @PostMapping("/userReserveEnterprise")
     public Map<String, Object> userReserveEnterprise(@RequestParam String userId, String enterpriseId, String enterpriseType) {
@@ -53,6 +59,24 @@ public class UserController {
     @GetMapping("/getMyAppointments")
     public List<Map<String, Object>> getUserAppointments(@RequestParam String userId) {
         return userService.getUserAppointments(userId);
+    }
+
+    //获取用户个人信息
+    @GetMapping("/getUserProfile")
+    public Map<String, Object> getUserProfile(@RequestParam String userId) {
+        return userService.getUserProfile(userId);
+    }
+
+    //更新用户地址
+    @PutMapping("/updateUserAddress")
+    public Map<String, Object> updateUserAddress(@RequestBody Map<String, Object> data) {
+        return userService.updateUserAddress(data);
+    }
+
+    //修改用户密码
+    @PutMapping("/updateUserPassword")
+    public Map<String, Object> updateUserPassword(@RequestBody Map<String, Object> data) {
+        return userService.updateUserPassword(data);
     }
 
 }

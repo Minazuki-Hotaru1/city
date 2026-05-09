@@ -21,4 +21,10 @@ public interface UserService {
     Map<String, Object> getUserLocation(String userId);
 
     List<Map<String, Object>> getUserAppointments(String userId);
+
+    Map<String, Object> getUserProfile(String userId);
+
+    Map<String, Object> updateUserAddress(Map<String, Object> data);
+
+    Map<String, Object> updateUserPassword(Map<String, Object> data);
 }
