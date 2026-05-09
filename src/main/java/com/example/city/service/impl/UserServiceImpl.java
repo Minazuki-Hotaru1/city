@@ -358,43 +358,60 @@ public class UserServiceImpl implements UserService{
         return Math.round(distanceKm * DISTANCE_SCALE) / DISTANCE_SCALE;
     }
 
-    //用户预约条件成功的方法
+    //用户预约提交
     @Override
     public Map<String, Object> userReserveEnterpriseSuccess(Map<String, Object> data) {
         Map<String, Object> result = new HashMap<>();
-        //先判断数据库里面是否有与这个预约信息相同的日期，如果有，则返回提示不能再进行预约
+        String userId = (String) data.get("userId");
+        String enterpriseId = (String) data.get("enterpriseId");
+        String date = (String) data.get("date");
+        String startTime = (String) data.get("startTime");
+        String endTime = (String) data.get("endTime");
+        String remarks = (String) data.get("remarks");
+
+        String fullStartTime = date + " " + startTime;
+        String fullEndTime = date + " " + endTime;
+
+        // 判断该用户是否已在同一天预约了其他企业
         List<Appointment> appointmentList = appointmentMapper.selectList(
-                new QueryWrapper<Appointment>().eq("user_id",  data.get("user_id"))
+                new QueryWrapper<Appointment>().eq("user_id", userId)
         );
-            for (Appointment appointment : appointmentList) {
-                LocalDate startDate = LocalDate.parse(appointment.getStartTime().substring(0, 10));
-                if(startDate.isEqual(LocalDate.parse(((String)data.get("startTime")).substring(0, 10)))) {
+        for (Appointment appointment : appointmentList) {
+            if (appointment.getStartTime() != null && appointment.getStartTime().length() >= 10) {
+                LocalDate existDate = LocalDate.parse(appointment.getStartTime().substring(0, 10));
+                LocalDate newDate = LocalDate.parse(date);
+                if (existDate.isEqual(newDate)) {
                     result.put("success", false);
-                    result.put("message", "您在该预约时间已预约其他企业，请重新选择日期");
+                    result.put("message", "您在该日期已有预约，请重新选择日期");
                     return result;
                 }
+            }
         }
 
+        // 更新企业已预约人数
         EnterpriseStatus enterpriseStatus = enterpriseStatusMapper.selectOne(
-                new QueryWrapper<EnterpriseStatus>().eq("enterprise_id", data.get("enterpriseId"))
+                new QueryWrapper<EnterpriseStatus>().eq("enterprise_id", enterpriseId)
         );
-        Appointment appointment = new Appointment();
-        appointment.setUserID((String) data.get("userId"));
-        appointment.setEnterpriseID((String) data.get("enterpriseId"));
-        appointment.setStartTime((String) data.get("data") + data.get("startTime"));
-        appointment.setEndTime((String) data.get("data") + data.get("endTime"));
-        appointment.setRemarks((String) data.get("remarks"));
-        //1：已预约但未到现场 2： 已预约并到现场 3：预约未到现场 默认填入1
-        appointment.setAppStatus("1");
-        enterpriseStatus.setReservedCount(String.valueOf((Integer.parseInt(enterpriseStatus.getReservedCount()))+ 1));
-        try{
-            //添加并更新数据
+        if (enterpriseStatus != null) {
+            int currentCount = Integer.parseInt(enterpriseStatus.getReservedCount());
+            enterpriseStatus.setReservedCount(String.valueOf(currentCount + 1));
             enterpriseStatusMapper.updateById(enterpriseStatus);
+        }
+
+        Appointment appointment = new Appointment();
+        appointment.setUserID(userId);
+        appointment.setEnterpriseID(enterpriseId);
+        appointment.setStartTime(fullStartTime);
+        appointment.setEndTime(fullEndTime);
+        appointment.setRemarks(remarks != null ? remarks : "");
+        appointment.setAppStatus("1");
+
+        try {
             appointmentMapper.insert(appointment);
             result.put("success", true);
             result.put("message", "预约成功");
             return result;
-        } catch (Exception e){
+        } catch (Exception e) {
             result.put("success", false);
             result.put("message", e.getMessage());
             return result;

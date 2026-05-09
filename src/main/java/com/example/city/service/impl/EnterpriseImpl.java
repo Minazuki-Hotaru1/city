@@ -32,6 +32,8 @@ public class EnterpriseImpl implements EnterpriseService {
     private UserMapper userMapper;
     @Autowired
     private AddressMapper addressMapper;
+    @Autowired
+    private EnterpriseStatusMapper enterpriseStatusMapper;
     @Resource
     private GetLatAndLong getLatAndLong;
     @Resource
@@ -387,6 +389,16 @@ public class EnterpriseImpl implements EnterpriseService {
         try {
             appointment.setAppStatus("2");
             appointmentMapper.updateById(appointment);
+
+            // 企业在线人数 +1
+            EnterpriseStatus status = enterpriseStatusMapper.selectOne(
+                    new QueryWrapper<EnterpriseStatus>().eq("enterprise_id", appointment.getEnterpriseID()));
+            if (status != null) {
+                int onlineCount = Integer.parseInt(status.getOnlineCount());
+                status.setOnlineCount(String.valueOf(onlineCount + 1));
+                enterpriseStatusMapper.updateById(status);
+            }
+
             result.put("success", true);
             result.put("message", "确认到场成功");
             return result;
