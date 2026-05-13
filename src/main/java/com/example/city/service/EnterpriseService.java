@@ -26,4 +26,6 @@ public interface EnterpriseService {
     Map<String, Object> updateEnterpriseAddress(Map<String, Object> data);
 
     Map<String, Object> updateEnterprisePassword(Map<String, Object> data);
+
+    Long getNewAppointmentCount(String enId);
 }

@@ -263,7 +263,9 @@ class CityApplicationTests {
             User user = new User();
             Faker faker = new Faker();
             String username = faker.name().username();
-            String password = passwordUtil.generatePassword(10);
+            // 生成随机密码并加密
+            String rawPassword = faker.internet().password(8, 16);
+            String password = passwordUtil.encode(rawPassword);
             //生成随机的号数
             Random random = new Random();
             int num1 = random.nextInt(500);
@@ -379,6 +381,59 @@ class CityApplicationTests {
                     + " | 预约 " + reservedCount + "/" + reservationCapacity
                     + " | 在线 " + onlineCount + "/" + onlineCapacity);
         }
+    }
+
+    // 密码加密迁移：将所有明文密码转为 BCrypt 哈希
+    @Test
+    void migratePasswords() {
+        int totalUpdated = 0;
+
+        // 1. 管理员表
+        List<Admin> admins = adminMapper.selectList(null);
+        for (Admin admin : admins) {
+            if (!admin.getPassword().startsWith("$2a$")) {
+                admin.setPassword(passwordUtil.encode(admin.getPassword()));
+                adminMapper.updateById(admin);
+                totalUpdated++;
+            }
+        }
+        System.out.println("管理员密码迁移完成: " + admins.size() + " 条");
+
+        // 2. 企业用户表
+        List<Enterprise> enterprises = enterpriseMapper.selectList(null);
+        for (Enterprise e : enterprises) {
+            if (!e.getPassword().startsWith("$2a$")) {
+                e.setPassword(passwordUtil.encode(e.getPassword()));
+                enterpriseMapper.updateById(e);
+                totalUpdated++;
+            }
+        }
+        System.out.println("企业用户密码迁移完成: " + enterprises.size() + " 条");
+
+        // 3. 企业审核表
+        List<EnterpriseConfirm> confirms = confirmMapper.selectList(null);
+        for (EnterpriseConfirm c : confirms) {
+            if (c.getPassword() != null && !c.getPassword().startsWith("$2a$")) {
+                c.setPassword(passwordUtil.encode(c.getPassword()));
+                confirmMapper.updateById(c);
+                totalUpdated++;
+            }
+        }
+        System.out.println("企业审核表密码迁移完成: " + confirms.size() + " 条");
+
+        // 4. 普通用户表
+        List<User> users = userMapper.selectList(null);
+        for (User user : users) {
+            if (!user.getPassword().startsWith("$2a$")) {
+                user.setPassword(passwordUtil.encode(user.getPassword()));
+                userMapper.updateById(user);
+                totalUpdated++;
+            }
+        }
+        System.out.println("普通用户密码迁移完成: " + users.size() + " 条");
+
+        System.out.println("========================================");
+        System.out.println("密码迁移全部完成！共更新 " + totalUpdated + " 条记录");
     }
 
     @Test

@@ -3,6 +3,7 @@ package com.example.city.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.city.Utils.GetLatAndLong;
+import com.example.city.Utils.PasswordUtil;
 import com.example.city.VO.AddressVO;
 import com.example.city.VO.ConfirmVO;
 import com.example.city.VO.EnterpriseVO;
@@ -49,6 +50,8 @@ public class AdminServiceImpl implements AdminService {
     private JwtUtil jwtUtil;
     @Resource
     private GetLatAndLong getLatAndLong;
+    @Resource
+    private PasswordUtil passwordUtil;
 
 
     @Override
@@ -56,12 +59,11 @@ public class AdminServiceImpl implements AdminService {
         Map<String, Object> result = new HashMap<>();
 
         QueryWrapper<Admin> wrapper = new QueryWrapper<>();
-        wrapper.eq("username", username)
-                .eq("password", password);
+        wrapper.eq("username", username);
 
         Admin admin = adminMapper.selectOne(wrapper);
 
-        if (admin == null) {
+        if (admin == null || !passwordUtil.matches(password, admin.getPassword())) {
             result.put("success", false);
             result.put("message", "用户名或密码错误");
             return result;
@@ -411,13 +413,13 @@ public class AdminServiceImpl implements AdminService {
             result.put("message", "管理员不存在");
             return result;
         }
-        if (!admin.getPassword().equals(oldPassword)) {
+        if (!passwordUtil.matches(oldPassword, admin.getPassword())) {
             result.put("success", false);
             result.put("message", "原密码错误");
             return result;
         }
 
-        admin.setPassword(newPassword);
+        admin.setPassword(passwordUtil.encode(newPassword));
         adminMapper.updateById(admin);
         result.put("success", true);
         result.put("message", "密码修改成功");

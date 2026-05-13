@@ -8,6 +8,7 @@ import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @RestController
@@ -78,6 +79,14 @@ public class EnterpriseController {
     @PutMapping("/updateEnterprisePassword")
     public Map<String, Object> updateEnterprisePassword(@RequestBody Map<String, Object> data) {
         return enterpriseService.updateEnterprisePassword(data);
+    }
+
+    //获取新预约数量
+    @GetMapping("/getNewAppointmentCount")
+    public Map<String, Object> getNewAppointmentCount(@RequestParam String enId) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("count", enterpriseService.getNewAppointmentCount(enId));
+        return result;
     }
 
 }

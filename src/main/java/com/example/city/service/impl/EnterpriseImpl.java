@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.city.VO.EnterpriseAppVO;
 import com.example.city.Utils.GetLatAndLong;
+import com.example.city.Utils.PasswordUtil;
 import com.example.city.entity.*;
 import com.example.city.mapper.*;
 import com.example.city.service.EnterpriseService;
@@ -38,17 +39,18 @@ public class EnterpriseImpl implements EnterpriseService {
     private GetLatAndLong getLatAndLong;
     @Resource
     private TypeMapper typeMapper;
+    @Resource
+    private PasswordUtil passwordUtil;
 
     @Override
     public Map<String, Object> login(String username, String password) {
         Map<String, Object> result = new HashMap<>();
 
         QueryWrapper<Enterprise> wrapper = new QueryWrapper<>();
-        wrapper.eq("username", username)
-                .eq("password", password);
+        wrapper.eq("username", username);
 
         Enterprise enterprise = enterpriseMapper.selectOne(wrapper);
-        if (enterprise == null) {
+        if (enterprise == null || !passwordUtil.matches(password, enterprise.getPassword())) {
             result.put("success", false);
             result.put("message", "用户名或密码错误");
             return result;
@@ -94,7 +96,7 @@ public class EnterpriseImpl implements EnterpriseService {
 
         EnterpriseConfirm confirm = new EnterpriseConfirm();
         confirm.setUsername((String) data.get("username"));
-        confirm.setPassword((String) data.get("password"));
+        confirm.setPassword(passwordUtil.encode((String) data.get("password")));
         confirm.setTypeID((String) data.get("typeID"));
         confirm.setRoles((String) data.get("roles"));
         confirm.setAddress((String) data.get("address"));
@@ -144,8 +146,9 @@ public class EnterpriseImpl implements EnterpriseService {
             String status = appointment.getAppStatus();
             String statusText = switch (status) {
                 case "1" -> "已预约";
-                case "2" -> "已完成";
-                case "3" -> "已预约但未到达";
+                case "2" -> "已到场";
+                case "3" -> "预约未到达";
+                case "4" -> "已离开";
                 default -> "";
             };
 
@@ -204,7 +207,7 @@ public class EnterpriseImpl implements EnterpriseService {
                 new Page<>(page, number),
                 new QueryWrapper<Appointment>()
                         .eq("enterprise_id", enId)
-                        .in("app_status", "1", "2", "3")
+                        .in("app_status", "1", "2", "3", "4")
                         .orderByDesc("app_start_time")
         );
         List<Appointment> appList = page1.getRecords();
@@ -245,6 +248,7 @@ public class EnterpriseImpl implements EnterpriseService {
             result.put("status1", Collections.emptyList());
             result.put("status2", Collections.emptyList());
             result.put("status3", Collections.emptyList());
+            result.put("status4", Collections.emptyList());
             return result;
         }
 
@@ -260,6 +264,7 @@ public class EnterpriseImpl implements EnterpriseService {
         List<Integer> status1Counts = new ArrayList<>();
         List<Integer> status2Counts = new ArrayList<>();
         List<Integer> status3Counts = new ArrayList<>();
+        List<Integer> status4Counts = new ArrayList<>();
 
         for (String date : dates) {
             long s1 = appointments.stream().filter(a ->
@@ -268,15 +273,19 @@ public class EnterpriseImpl implements EnterpriseService {
                     a.getStartTime() != null && a.getStartTime().startsWith(date) && "2".equals(a.getAppStatus())).count();
             long s3 = appointments.stream().filter(a ->
                     a.getStartTime() != null && a.getStartTime().startsWith(date) && "3".equals(a.getAppStatus())).count();
+            long s4 = appointments.stream().filter(a ->
+                    a.getStartTime() != null && a.getStartTime().startsWith(date) && "4".equals(a.getAppStatus())).count();
             status1Counts.add((int) s1);
             status2Counts.add((int) s2);
             status3Counts.add((int) s3);
+            status4Counts.add((int) s4);
         }
 
         result.put("dates", dates);
         result.put("status1", status1Counts);
         result.put("status2", status2Counts);
         result.put("status3", status3Counts);
+        result.put("status4", status4Counts);
         return result;
     }
 
@@ -356,17 +365,26 @@ public class EnterpriseImpl implements EnterpriseService {
             result.put("message", "企业不存在");
             return result;
         }
-        if (!enterprise.getPassword().equals(oldPassword)) {
+        if (!passwordUtil.matches(oldPassword, enterprise.getPassword())) {
             result.put("success", false);
             result.put("message", "原密码错误");
             return result;
         }
 
-        enterprise.setPassword(newPassword);
+        enterprise.setPassword(passwordUtil.encode(newPassword));
         enterpriseMapper.updateById(enterprise);
         result.put("success", true);
         result.put("message", "密码修改成功");
         return result;
+    }
+
+    //获取新预约数量（状态为1的预约数）
+    @Override
+    public Long getNewAppointmentCount(String enId) {
+        return appointmentMapper.selectCount(
+                new QueryWrapper<Appointment>()
+                        .eq("enterprise_id", enId)
+                        .eq("app_status", "1"));
     }
 
     //当预约的用户到线下后，企业用户确认到场，更改预约状态为已到场
@@ -381,7 +399,7 @@ public class EnterpriseImpl implements EnterpriseService {
             result.put("message", "预约记录不存在");
             return result;
         }
-        if ("2".equals(appointment.getAppStatus()) || "3".equals(appointment.getAppStatus())) {
+        if ("2".equals(appointment.getAppStatus()) || "3".equals(appointment.getAppStatus()) || "4".equals(appointment.getAppStatus())) {
             result.put("success", false);
             result.put("message", "该预约已处理，请勿重复操作");
             return result;

@@ -21,7 +21,7 @@ public class Appointment {
     @TableField("app_end_time")
     private String endTime;
     @TableField("app_status")
-    //1：已预约但未到现场 2： 已预约并到现场 3：预约未到现场
+    //1：已预约未到场 2：已到场 3：预约未到场 4：已离开
     private String appStatus;
     @TableField("remarks")
     private String remarks;

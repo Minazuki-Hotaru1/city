@@ -4,6 +4,7 @@ package com.example.city.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.example.city.Utils.GetLatAndLong;
 import com.example.city.Utils.JwtUtil;
+import com.example.city.Utils.PasswordUtil;
 import com.example.city.VO.AddressVO;
 import com.example.city.entity.*;
 import com.example.city.mapper.*;
@@ -52,6 +53,8 @@ public class UserServiceImpl implements UserService{
     private String amapWebServiceKey;
     @Autowired
     private AppointmentMapper appointmentMapper;
+    @Resource
+    private PasswordUtil passwordUtil;
 
 
     //普通用户注册方法
@@ -69,7 +72,7 @@ public class UserServiceImpl implements UserService{
         try {
             User user = new User();
             user.setUsername(data.get("username").toString());
-            user.setPassword(data.get("password").toString());
+            user.setPassword(passwordUtil.encode(data.get("password").toString()));
             user.setAddress(data.get("address").toString());
             //获取用户传入的地址转变为经纬度
             Map map = getLatAndLong.getLatAndLong(data.get("address").toString());
@@ -96,12 +99,11 @@ public class UserServiceImpl implements UserService{
         Map<String, Object> result = new HashMap<>();
 
         QueryWrapper<User> wrapper = new QueryWrapper<>();
-        wrapper.eq("username", username)
-                .eq("password", password);
+        wrapper.eq("username", username);
 
         User user = userMapper.selectOne(wrapper);
 
-        if (user == null) {
+        if (user == null || !passwordUtil.matches(password, user.getPassword())) {
             result.put("success", false);
             result.put("message", "用户名或密码错误");
             return result;
@@ -508,13 +510,13 @@ public class UserServiceImpl implements UserService{
             result.put("message", "用户不存在");
             return result;
         }
-        if (!user.getPassword().equals(oldPassword)) {
+        if (!passwordUtil.matches(oldPassword, user.getPassword())) {
             result.put("success", false);
             result.put("message", "原密码错误");
             return result;
         }
 
-        user.setPassword(newPassword);
+        user.setPassword(passwordUtil.encode(newPassword));
         userMapper.updateById(user);
         result.put("success", true);
         result.put("message", "密码修改成功");
